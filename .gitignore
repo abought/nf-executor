@@ -1,0 +1,8 @@
+.venv/*
+
+# Nextflow output/progress files
+**/.nextflow/*
+**/.nextflow.log*
+mock_workflow/work/*
+mock_workflow/*report.html
+
