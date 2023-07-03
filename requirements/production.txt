@@ -1,2 +1,6 @@
-fastapi[all]==0.98.0
-orjson
+fastapi[all]~=0.98.0
+orjson~=3.9.1
+sqlalchemy~=2.0.17
+
+pydantic~=1.10.9
+httpx~=0.24.1

@@ -19,7 +19,7 @@ async def main():
     async with httpx.AsyncClient() as client:
         for item in records:
             resp = await post_record(client, item)
-            print(resp.status_code)
+            print(resp.status_code, resp.json())
 
 
 asyncio.run(main())
