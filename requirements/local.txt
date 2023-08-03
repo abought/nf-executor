@@ -1,0 +1,16 @@
+-r ./base.txt
+
+# Code quality
+# ------------------------------------------------------------------------------
+flake8~=6.1.0  # https://github.com/PyCQA/flake8
+
+# Testing
+# ------------------------------------------------------------------------------
+mypy~=1.4.1
+pytest~=7.4.0
+
+# Django
+# ------------------------------------------------------------------------------
+django-debug-toolbar~=4.1.0  # https://github.com/jazzband/django-debug-toolbar
+pytest-django~=4.5.2 # https://github.com/pytest-dev/pytest-django
+factory-boy==3.3.0  # https://github.com/FactoryBoy/factory_boy

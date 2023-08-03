@@ -1,0 +1,15 @@
+psycopg~=3.1.9
+
+# Django
+# --------------------------
+django~=4.2.3
+django-environ~=0.10.0  # https://github.com/joke2k/django-environ
+djangorestframework~=3.14.0
+django-model-utils~=4.3.1  # https://github.com/jazzband/django-model-utils
+django-filter==23.2  # https://github.com/carltongibson/django-filter/
+drf-orjson-renderer~=1.7.1
+
+# Misc
+# --------------------------
+orjson~=3.9.1
+

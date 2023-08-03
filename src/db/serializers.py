@@ -10,7 +10,7 @@ from pydantic import (
     validator,
 )
 
-from src.db import enums
+from nf_executor.api import enums
 
 
 class BaseFields(BaseModel):
@@ -42,7 +42,7 @@ class Job(BaseModel):
     run_name: str = Field(
         description="A human-readable label. Two runs may have the same label, eg if a user initiates restart."
     )
-    workflow_id: int = Field(description="The target workflow")
+    workflow: int = Field(description="The target workflow")
 
     status: enums.JobStatus = enums.JobStatus.submitted
 

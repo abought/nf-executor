@@ -1,12 +1,8 @@
 """
 Database models associated with service
 """
-from datetime import (
-    datetime,
-    timedelta
-)
+from datetime import timedelta
 import typing as ty
-
 
 from sqlalchemy import (
     Column,
@@ -22,8 +18,6 @@ from sqlalchemy.orm import (
 )
 
 from src.db.base import Base
-
-from src.db.enums import JobStatus, TaskStatus
 
 
 class BaseFieldsMixin:

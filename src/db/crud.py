@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 
-from src.db import enums, models, serializers
+from src.db import models
+from nf_executor.api import enums
 
 
 def get_workflows(db: Session,
