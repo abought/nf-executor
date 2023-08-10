@@ -18,20 +18,15 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import include, path
 
-
-def test(request):
-    from django.http import HttpResponse
-    return HttpResponse('hi')
-
-
 urlpatterns = [
-    # path('admin/', admin.site.urls),
-    path('', test, name='root'),
-
     path(
         'api/v1/',
         include('nf_executor.api.urls', namespace='apiv1'),
-    )
+    ),
+    path(
+        '/nextflow/',
+        include('nf_executor.nextflow.urls', namespace='nextflow'),
+    ),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 if settings.DEBUG and "debug_toolbar" in settings.INSTALLED_APPS:

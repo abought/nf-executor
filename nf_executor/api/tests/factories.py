@@ -32,20 +32,23 @@ class WorkflowFactory(DjangoModelFactory):
 
 class JobFactory(DjangoModelFactory):
     run_id = factory.Faker('md5', raw_output=False)
-    name = factory.Faker('text', max_nb_chars=20)
 
     workflow = factory.SubFactory(WorkflowFactory)
+
+    params = factory.LazyFunction(dict)
 
     owner = factory.Faker('email', safe=True)
     executor_id = factory.Faker('md5', raw_output=False)
     status = factory.LazyFunction(random_job_status)
 
     expire_on = factory.Faker('date_time', tzinfo=datetime.timezone.utc)
-    start_on = factory.Faker('date_time', tzinfo=datetime.timezone.utc)
-    duration = factory.LazyFunction(lambda: random.randint(1, 1000))
+    started_on = factory.Faker('date_time', tzinfo=datetime.timezone.utc)
+    completed_on = factory.Faker('date_time', tzinfo=datetime.timezone.utc)
 
-    succeed_count = factory.LazyFunction(lambda: random.randint(1, 10))
-    retries_count = factory.LazyFunction(lambda: random.randint(1, 5))
+    duration = factory.Faker('random_int', min=0, max=1000)
+
+    succeed_count = factory.Faker('random_int', min=1, max=10)
+    retries_count = factory.Faker('random_int', min=0, max=2)
 
     class Meta:
         model = models.Job
@@ -54,6 +57,10 @@ class JobFactory(DjangoModelFactory):
 class TaskFactory(DjangoModelFactory):
     job = factory.SubFactory(JobFactory)
     name = factory.Faker('text', max_nb_chars=20)
+
+    task_id = factory.Sequence(lambda n: n + 1)
+    native_id = factory.Sequence(lambda n: n + 1)
+
     status = factory.LazyFunction(random_task_status)
 
     submitted_on = factory.Faker('date_time', tzinfo=datetime.timezone.utc)

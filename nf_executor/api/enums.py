@@ -12,7 +12,7 @@ class JobStatus(ModelHelper, IntEnum):
     Known nextflow Workflow statuses: https://www.nextflow.io/docs/latest/tracing.html#weblog-via-http
     """
     started = 1
-    error = 2
+    error = 2  # Is this a task or job state? NF docs unclear
     completed = 3
     # Not provided by nextflow- managed by this system
     submitted = 0
