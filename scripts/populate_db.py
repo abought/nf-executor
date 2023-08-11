@@ -37,14 +37,7 @@ if __name__ == '__main__':
     args = parse_args()
 
     # We need a real workflow, not dummy data from a factory, to test executor functionality
-    # w = factories.WorkflowFactory()
-    w, _ = models.Workflow.objects.get_or_create(
-        name='Mock workflow',
-        version='1.0.0',
-        description='An example nextflow workflow based on Hello World Tutorial',
-        definition_path=Path(__file__).parent / 'mock_workflow' / 'hello.nf'
-    )
-    w.save()
+    w = factories.get_mock_workflow()
 
     # Note: This will create job models, but not execute them against the workflow.
     fake = faker.Faker()

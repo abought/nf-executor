@@ -50,6 +50,9 @@ def future_date(days=30):
 
 class Job(TimeStampedModel):
     """One specific execution of a given workflow. Restart/resubmits are tracked as a separate execution."""
+
+    #####
+    # Fields set at model creation
     run_id = models.CharField(
         max_length=40,  # nf runIDs are 32 chars
         help_text="Unique-per-workflow run ID provided to the executor. If a job is restarted, specify a new ID.",
@@ -84,6 +87,8 @@ class Job(TimeStampedModel):
         db_index=True,
     )
 
+    #######
+    # Fields managed internally by executor service
     executor_id = models.CharField(
         max_length=50,
         help_text="Used to manually check job status (in case of message delivery failure). PID, AWS Batch arn, etc",

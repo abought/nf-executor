@@ -19,3 +19,7 @@ class UnknownEventException(BaseNextflowException):
     """
     DEFAULT_MESSAGE = "Unrecognized nextflow trace event type"
 
+
+class StaleJobException(BaseNextflowException):
+    """Usually a developer error: job is in progress, complete, or canceled."""
+    DEFAULT_MESSAGE = "Attempted to run a job with status other than 'submitted'."

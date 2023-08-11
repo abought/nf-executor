@@ -8,6 +8,8 @@ import typing as ty
 
 from nf_executor.api import enums, models
 
+from nf_executor.nextflow import exceptions as exc
+
 logger = logging.getLogger(__name__)
 
 
@@ -48,12 +50,23 @@ class AbstractExecutor(abc.ABC):
 
         All nextflow tasks report execution via an HTTP callback URI
         """
+        if job.status != enums.JobStatus.submitted:
+            # Restarts *must* be represented as a new job object, to avoid conflicting records of task events
+            # Please don't try to be clever by just editing one field to bypass this.
+            raise exc.StaleJobException
 
         try:
             self._write_params(job, params)
+            params_ok = True
         except:
+            params_ok = False
             logger.exception(f"Could not write job parameters file in {job.workdir}. Check if volume is readable.")
+
+        if not params_ok:
+            # This may be a canary for unreachable working directory, so we shouldn't allow the job to proceed.
             job.status = enums.JobStatus.error
+            job.save()
+            return job
 
         try:
             executor_id = self._submit_to_engine(job, callback_uri, *args, **kwargs)
@@ -108,22 +121,16 @@ class AbstractExecutor(abc.ABC):
         """Convenience method: allow status checks based on an ID, without a job object"""
         return models.Job.objects.filter(workflow=self.workflow).get(run_id=job_id)
 
-    def _write_params(self, job: models.Job, params: dict) -> bool:
+    def _write_params(self, job: models.Job, params: dict):
         """
-        Write a params file used by nextflow. Most executors will place this in a working directory on a shared volume.
+        Write a params file used by nextflow to the working directory
         """
-        if not params:
-            # Almost any useful job will have a params file, but just in case...
-            # TODO verify that django jsonfield evaluates as falsy when empty
-            return False
-
         path = self._params_fn(job.workdir)
         with open(path, 'w') as f:
             json.dump(params, f, indent=2)
-        return True
 
     def _generate_workflow_options(self, job: models.Job, callback_uri: str, *args, **kwargs) -> list[str]:
-        """Generate the workflow options used by nextflow. Usually """
+        """Generate the workflow options used by nextflow."""
         workflow_path = self.workflow.definition_path
         workdir = job.workdir
 
@@ -136,7 +143,9 @@ class AbstractExecutor(abc.ABC):
             '-name', job.run_id,
             '-with-trace', trace_fn,
             '-with-weblog', callback_uri,
-            '-with-report', report_fn
+            '-with-report', report_fn,
+            # Workflow definition and report files are written to root of workdir location, other files go under that
+            '-work-dir', os.path.join(workdir, 'intermediate'),
         ]
 
         params_fn = self._params_fn(job.workdir)
@@ -184,18 +193,31 @@ class SubprocessExecutor(AbstractExecutor):
     def _query_remote_state(self, job: models.Job):
         raise NotImplementedError
 
+    def _params_fn(self, workdir: str) -> str:
+        # Subprocess executor uses a local filesystem, so unlike s3, it matters if prefix doesn't exist.
+        if not os.path.isdir(workdir):
+            os.makedirs(workdir)
+
+        return super()._params_fn(workdir)
+
     def _submit_to_engine(self, job: models.Job, callback_uri: str, *args, **kwargs) -> str:
         """
         Submit a job to the execution engine
 
-        TODO: Research NF Batch executor, and determine the best way to handle the various kinds of outputs
-          (like trace files) that wouldn't be auto-uploaded to S3
+        TODO: Verify that NF executors can upload report/trace files to s3 and no further file handling is needed
         """
-
         args = self._generate_workflow_options(job, callback_uri, *args, **kwargs)
 
         logger.debug(f"Submitting job '{job.run_id}' to executor '{self.__class__.__name__}' with options {args}")
-        proc = subprocess.Popen(args)
+
+        sync = kwargs.get('sync', False)
+        if sync:
+            # Really really really only use this for debugging: web request shouldn't ever block on a child process
+            proc = subprocess.run(args, capture_output=True)
+            logger.debug(f'Finished job run. Stdout:  {proc.stdout}')
+            logger.debug(f'Finished job run. Stderr:  {proc.stderr}')
+        else:
+            proc = subprocess.Popen(args)
 
         pid = str(proc.pid)
 

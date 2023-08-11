@@ -1,4 +1,5 @@
 import datetime
+from pathlib import Path
 import random
 
 import factory
@@ -18,6 +19,22 @@ def random_job_status() -> int:
 
 def random_task_status() -> int:
     return random.choice(list(enums.TaskStatus)).value
+
+
+def get_mock_workflow() -> models.Workflow:
+    """
+    Less factory, more a fixture representing a workflow provided with the repo. Used to test executor functionality
+
+    This is not a factory trait because we only want to create it once.
+    """
+    w, _ = models.Workflow.objects.get_or_create(
+        name='Mock workflow',
+        version='1.0.0',
+        description='An example nextflow workflow based on Hello World Tutorial',
+        definition_path=Path(__file__).parents[3] / 'mock_workflow' / 'hello.nf'
+    )
+    w.save()
+    return w
 
 
 class WorkflowFactory(DjangoModelFactory):
