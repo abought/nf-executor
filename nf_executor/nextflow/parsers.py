@@ -100,17 +100,17 @@ def task_complete(job: models.Job, payload: dict) -> models.Task:
 
 
 def parse_event(job: models.Job, payload: ty.Union[str, dict]) -> ty.Union[models.Task, models.Job]:
-    """Map an event name(from nextflow) into a Job or Task record, as appropriate"""
+    """Map an event name (from NF as string) into a Job or Task record, as appropriate"""
     known_events = {
-        enums.JobStatus.started: job_started,
-        enums.JobStatus.error: job_error,
-        enums.JobStatus.completed: job_completed,
-        enums.TaskStatus.process_submitted: task_submit,
-        enums.TaskStatus.process_started: task_start,
-        enums.TaskStatus.process_completed: task_complete,
+        enums.JobStatus.started.name: job_started,
+        enums.JobStatus.error.name: job_error,
+        enums.JobStatus.completed.name: job_completed,
+        enums.TaskStatus.process_submitted.name: task_submit,
+        enums.TaskStatus.process_started.name: task_start,
+        enums.TaskStatus.process_completed.name: task_complete,
     }
 
-    if isinstance(payload, str):
+    if isinstance(payload, (str, bytes)):
         payload = json.loads(payload)
 
     name = payload['event']

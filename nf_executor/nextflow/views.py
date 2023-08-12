@@ -24,12 +24,11 @@ class NextflowCallback(SingleObjectMixin, APIView):
     http_method_names = ('post',)
     queryset = Job.objects.all()
 
-    def post(self, request: HttpRequest):
+    def post(self, request: HttpRequest, pk):
         try:
             # As a safeguard, job IDs are included in callback URLs.
             job = self.get_object()
         except Job.DoesNotExist as e:
-            pk = self.kwargs.get(self.pk_url_kwarg)
             logger.critical(f'Received nextflow job status for a job that does not exist: {pk}')
             raise e
 

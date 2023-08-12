@@ -125,6 +125,9 @@ class AbstractExecutor(abc.ABC):
         """
         Write a params file used by nextflow to the working directory
         """
+        if params is None:
+            params = {}
+
         path = self._params_fn(job.workdir)
         with open(path, 'w') as f:
             json.dump(params, f, indent=2)
@@ -168,6 +171,9 @@ class AbstractExecutor(abc.ABC):
         Queries the execution engine to determine if the task is running. This may use one or multiple artifacts.
 
         Must handle the following scenarios:
+        - (error) Nextflow failed immediately upon start, and didn't bother to send an error to the monitor service
+            (eg can happen with malformed params file)
+
         - (normal) Job not started, but execution engine says it is in the queue
         - (error) Job not started, and not in queue
 

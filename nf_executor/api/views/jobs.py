@@ -1,6 +1,7 @@
 import os
 
 from django.urls import reverse
+from django.utils.text import get_valid_filename
 from rest_framework import generics
 
 from nf_executor.api import models, serializers
@@ -25,17 +26,20 @@ class JobListView(generics.ListCreateAPIView):
 
         TODO: Make the execution mode configurable per workflow
         """
-        instance = serializer.instance
-        executor = SubprocessExecutor(instance.workflow)
+        data = serializer.validated_data
+        executor = SubprocessExecutor(data['workflow'])
 
-        # Assign working directory. TODO Should this be done by the executor to abstract away infra?
-        wd = f'/tmp/nf_executor/{instance.run_id}'
-        os.makedirs(wd)
-        instance.workdir = wd
+        # Assign working directory. A job ID is unique *per workflow*
+        safe_path = get_valid_filename(f'{data["workflow"].pk}_{data["run_id"]}')
+        wd = os.path.join('/tmp/nf_executor/', safe_path)
+
+        data['workdir'] = wd
 
         # First save: record work requested by user. The executor will save again once work has been scheduled.
         job = serializer.save()
 
         # TODO: Make this configurable per workflow in the future, so executors can be replaced in local vs prod
-        callback_uri = self.request.build_absolute_uri(reverse('apiv1:jobs-list'))
+        callback_uri = self.request.build_absolute_uri(
+            reverse('nextflow:callback', kwargs={'pk': job.pk})
+        )
         executor.run(job, job.params, callback_uri)

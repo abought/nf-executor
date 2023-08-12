@@ -35,6 +35,9 @@ class Workflow(TimeStampedModel):
         help_text="Depends on executor type. Folder location, container ARN, etc.",
     )
 
+    def __str__(self):
+        return f"{self.name} (v{self.version})"
+
     class Meta:
         constraints = [
             models.UniqueConstraint(
@@ -70,6 +73,8 @@ class Job(TimeStampedModel):
     )
     params = models.JSONField(
         blank=True,
+        null=True,
+        default=dict,
         help_text="User-specified params unique to this workflow"
     )
     workdir = models.CharField(
@@ -80,7 +85,7 @@ class Job(TimeStampedModel):
                   " TODO: special outputs, like NF trace files, should be accessible after job completes too."
     )
     owner = models.CharField(
-        max_length=10,
+        max_length=100,
         help_text="eg User ID provided by an external service. Must not be mutable (username or ID, not email)",
         null=True,
         blank=True,
