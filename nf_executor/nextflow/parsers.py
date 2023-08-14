@@ -32,7 +32,12 @@ def job_error(job: models.Job, payload: dict) -> models.Job:
 def job_completed(job: models.Job, payload: dict) -> models.Job:
     """
     Job completion notice.
-    Override any other status (incl error state) because there are data cleanup ramifications"""
+    Override any other status (incl error state) because there are data cleanup ramifications
+
+    In the future, we'd like to treat this like a state machine (only allow transition if job state was started)
+
+    In practice, out-of-order event stream processing can't be ruled out, so...
+    """
     metadata = payload['metadata']
 
     job.completed_on = parse_time(payload)
@@ -40,8 +45,8 @@ def job_completed(job: models.Job, payload: dict) -> models.Job:
 
     # Capture metadata seen only in job completion events
     job.duration = metadata['workflow']['duration']
-    job.succeed_count = metadata['workflowStats']['succeededCount']
-    job.retries_count = metadata['workflowStats']['retriesCount']
+    job.succeed_count = metadata['workflow']['workflowStats']['succeededCount']
+    job.retries_count = metadata['workflow']['workflowStats']['retriesCount']
 
     return job
 

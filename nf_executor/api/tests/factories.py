@@ -70,6 +70,46 @@ class JobFactory(DjangoModelFactory):
     class Meta:
         model = models.Job
 
+    class Params:
+        is_submitted = factory.Trait(
+            status=enums.JobStatus.submitted.value,
+            started_on=None,
+            completed_on=None,
+            executor_id='',
+            duration=0,
+            succeed_count=0,
+            retries_count=0
+        )
+
+        is_started = factory.Trait(
+            status=enums.JobStatus.started.value,
+            completed_on=None,
+            executor_id='42',
+            duration=0,
+            succeed_count=0,
+            retries_count=0
+        )
+
+        is_completed = factory.Trait(
+            status=enums.JobStatus.started.value,
+            executor_id='42',
+            duration=1000,
+            succeed_count=5,
+            retries_count=1
+        )
+
+        is_error = factory.Trait(
+            #  TODO capture error records, then write error trait
+            status=enums.JobStatus.error.value,
+        )
+
+        is_canceled = factory.Trait(
+            # Not a NF event, therefore fields depend on us
+            status=enums.JobStatus.error.canceled.value,
+            expire_on=datetime.datetime.utcnow(),  # if canceled, records flagged for immediate removal
+            duration=1000  # start -> now
+        )
+
 
 class TaskFactory(DjangoModelFactory):
     job = factory.SubFactory(JobFactory)
@@ -79,6 +119,7 @@ class TaskFactory(DjangoModelFactory):
     native_id = factory.Sequence(lambda n: n + 1)
 
     status = factory.LazyFunction(random_task_status)
+    exit_code = factory.Faker('random_int', min=0, max=2)
 
     submitted_on = factory.Faker('date_time', tzinfo=datetime.timezone.utc)
     started_on = factory.Faker('date_time', tzinfo=datetime.timezone.utc)
@@ -86,3 +127,25 @@ class TaskFactory(DjangoModelFactory):
 
     class Meta:
         model = models.Task
+
+    class Params:
+        is_submitted = factory.Trait(
+            started_on=None,
+            completed_on=None,
+            status=enums.TaskStatus.process_submitted.value,
+            native_id=None,
+            exit_code=None,
+        )
+
+        is_started = factory.Trait(
+            status=enums.TaskStatus.process_started.value,
+            native_id="abc12",
+            exit_code=None,
+            completed_on=None,
+        )
+
+        is_completed = factory.Trait(
+            status=enums.TaskStatus.process_completed.value,
+        )
+
+        # is_error = factory.Trait()  # Does NF ever communicate this about tasks?

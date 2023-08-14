@@ -1,0 +1,30 @@
+{
+  "trace": {
+    "task_id": 1,
+    "status": "RUNNING",
+    "hash": "c6/fb153c",
+    "name": "SPLITLETTERS (1)",
+    "exit": 2147483647,
+    "submit": 1687472753679,
+    "start": 1687472753721,
+    "process": "SPLITLETTERS",
+    "tag": null,
+    "module": [],
+    "container": null,
+    "attempt": 1,
+    "script": "\n    printf 'Hello world!' | split -b 6 - chunk_\n    ",
+    "scratch": null,
+    "workdir": "/Users/abought/code/personal/nf-executor/mock_workflow/work/c6/fb153c4001ac3423bfdd1a582ff1cd",
+    "queue": null,
+    "cpus": 1,
+    "memory": null,
+    "disk": null,
+    "time": null,
+    "env": null,
+    "native_id": 28560
+  },
+  "runId": "456ae710-1ac1-4148-a6a2-10b5e73d0157",
+  "event": "process_started",
+  "runName": "insert_id_here",
+  "utcTime": "2023-06-22T22:25:53Z"
+}
