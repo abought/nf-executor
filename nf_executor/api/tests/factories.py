@@ -106,6 +106,7 @@ class JobFactory(DjangoModelFactory):
         is_canceled = factory.Trait(
             # Not a NF event, therefore fields depend on us
             status=enums.JobStatus.error.canceled.value,
+            completed_on=datetime.datetime.utcnow(),
             expire_on=datetime.datetime.utcnow(),  # if canceled, records flagged for immediate removal
             duration=1000  # start -> now
         )

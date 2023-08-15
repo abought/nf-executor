@@ -1,10 +1,14 @@
 import abc
 import dataclasses as dc
+import errno
 import json
 import logging
 import os
+import signal
 import subprocess
 import typing as ty
+
+from django.utils import timezone
 
 from nf_executor.api import enums, models
 
@@ -115,6 +119,9 @@ class AbstractExecutor(abc.ABC):
             job.task_set.filter(status=enums.TaskStatus.process_completed).count(),
         )
 
+    def cancel(self, job):
+        raise NotImplementedError
+
     #######
     # Private / internal methods
     def _get_job_from_id(self, job_id: str) -> models.Job:
@@ -137,6 +144,7 @@ class AbstractExecutor(abc.ABC):
         workflow_path = self.workflow.definition_path
         workdir = job.workdir
 
+        log_fn = os.path.join(workdir, f'nf_log_{job.run_id}.txt')
         trace_fn = os.path.join(workdir, f'trace_{job.run_id}.txt')
         report_fn = os.path.join(workdir, f'report-{job.run_id}.html')
 
@@ -144,6 +152,7 @@ class AbstractExecutor(abc.ABC):
             'nextflow',
             'run', workflow_path,
             '-name', job.run_id,
+            '-log', log_fn,
             '-with-trace', trace_fn,
             '-with-weblog', callback_uri,
             '-with-report', report_fn,
@@ -159,6 +168,15 @@ class AbstractExecutor(abc.ABC):
 
     @abc.abstractmethod
     def _submit_to_engine(self, job: models.Job, callback_uri: str, *args, **kwargs) -> str:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def _cancel_to_engine(self, job: models.Job) -> bool:
+        """
+        Submit cancel signals for the job (and subprocesses if appropriate)
+
+        Ideally, this should also schedule a celery process to confirm the kill signal after a specified time
+        """
         raise NotImplementedError
 
     def _query_local_state(self, job: models.Job) -> enums.JobStatus:
@@ -196,6 +214,36 @@ class SubprocessExecutor(AbstractExecutor):
         ONLY used for dev/testing, and even then we should usually use celery.
 
     """
+    def cancel(self, job: models.Job) -> models.Job:
+        if job.status == enums.JobStatus.completed:
+            logger.info(f'Cancel request for job {job.pk} was ignored because job already finished')
+            return job
+
+        logger.info(f'Manually killing job {job.pk}')
+        # Note: this is dicey if NF doesn't actually kill the process, but subprocess executor isn't meant to be perfect.
+        # TODO: How are tasks handled when NF is killed? Does this need special handling for different compute engines?
+
+        job.status = enums.JobStatus.cancel_pending
+        job.save()
+
+        signal_accepted = self._cancel_to_engine(job)
+        if not signal_accepted:
+            job.status = enums.JobStatus.unknown
+            job.save()
+            return job
+
+        # Update job fields once cancel confirmed
+        # TODO move this to "cancel confirmed" celery task
+        # TODO: Does nextflow send an event when the job is killed this way? (characterize how it works)
+        job.expire_on = timezone.now()  # Tell background worker to clean up working directories
+        job.completed_on = timezone.now()
+
+        delta = job.completed_on - job.started_on
+        job.duration = delta.seconds * 1000  # nf specifies in ms, and so do we
+
+        job.save()
+        return job
+
     def _query_remote_state(self, job: models.Job):
         raise NotImplementedError
 
@@ -229,3 +277,22 @@ class SubprocessExecutor(AbstractExecutor):
 
         logger.info(f"Executor accepted job '{job.run_id}' and assigned identifier '{pid}'")
         return pid
+
+    def _cancel_to_engine(self, job: models.Job) -> bool:
+        """
+        Kill the job
+
+        TODO Test this! Current mock workflow is very short duration and hard to cancel
+        """
+        try:
+            # WARNING: This DOES NOT VERIFY that PID is the thing originally scheduled. It could be reused.
+            #    The subprocess executor is NOT PRODUCTION GRADE and so this is a simplistic implementation.
+            os.kill(int(job.executor_id), signal.SIGTERM)
+        except OSError as e:
+            if e.errno == errno.ESRCH:
+                logger.info(f'Failed to kill {job.pk} because it is not running')
+                return False
+            raise e
+        except:
+            logger.exception(f'Canceling job {job.pk} failed for unknown reason')
+            return False
