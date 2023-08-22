@@ -105,6 +105,15 @@ REST_FRAMEWORK = {
     'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.NamespaceVersioning',
 }
 
+NF_EXECUTOR = {
+    # TODO: Provide production settings to override this. For full production system, consider allowing
+    #  storage target to be configured separately for each workflow
+    'compute': 'nf_executor.nextflow.runners.compute.SubprocessExecutor',
+    'storage': 'nf_executor.nextflow.runners.storage.LocalStorage',
+    'workdir': '/tmp/nf_executor',   # Intermediate files during a run
+    'logs_dir': ROOT_DIR / 'wf-results',  # Where logs etc. are written. Can be s3 bucket.
+}
+
 WSGI_APPLICATION = 'config.wsgi.application'
 
 

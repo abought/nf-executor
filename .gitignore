@@ -8,3 +8,5 @@
 mock_workflow/work/*
 mock_workflow/*report.html
 
+# When run locally (subprocess executor), workflow results go to a local folder (and intermediate files go to temp)
+wf-results/**

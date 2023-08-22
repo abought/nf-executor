@@ -1,0 +1,36 @@
+import logging
+import os
+import shutil
+
+from .base import AbstractJobStorage
+
+logger = logging.getLogger(__name__)
+
+
+class LocalStorage(AbstractJobStorage):
+    """Helpers for content in local storage"""
+    def setup(self):
+        wd = self._path
+        if not os.path.isdir(wd):
+            logger.info(f'Creating working directory: {wd}')
+            os.makedirs(wd)
+
+    def read_contents(self, path: str, mode: str = 'r'):
+        full = self.relative(path)
+        with open(full, mode) as f:
+            return f.read()
+
+    def write_contents(self, path: str, content, mode='w'):
+        with open(path, mode) as f:
+            f.write(content)
+
+    def _delete(self, path):
+        if not os.path.exists(path):
+            raise IOError(f'The specified file or folder does not exist: {path}')
+
+        if os.path.isfile(path):
+            os.remove(path)
+        elif os.path.isdir(path):
+            shutil.rmtree(path)
+        else:
+            raise IOError('Attempted to delete item that is neither a file nor a folder')

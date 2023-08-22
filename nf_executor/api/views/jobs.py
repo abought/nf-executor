@@ -1,11 +1,13 @@
 import os
 
+from django.conf import settings
 from django.urls import reverse
 from django.utils.text import get_valid_filename
 from rest_framework import generics
 
 from nf_executor.api import models, serializers
-from nf_executor.nextflow.executors import SubprocessExecutor
+from nf_executor.nextflow.runners import get_storage
+from nf_executor.nextflow.runners.compute import SubprocessExecutor
 
 
 class JobListView(generics.ListCreateAPIView):
@@ -27,18 +29,20 @@ class JobListView(generics.ListCreateAPIView):
         TODO: Make the execution mode configurable per workflow
         """
         data = serializer.validated_data
-        executor = SubprocessExecutor(data['workflow'])
+        safe_path = get_valid_filename(f'{data["workflow"].pk}_{data["run_id"]}')
+        storage = get_storage(safe_path)  # Persistent storage for things like logs
+
+        # Local tmp folder assumed to always be a filesystem
+        tmp_path = os.path.join(settings.NF_EXECUTOR['workdir'], safe_path)
+        executor = SubprocessExecutor(storage, workdir=tmp_path)
 
         # Assign working directory. A job ID is unique *per workflow*
-        safe_path = get_valid_filename(f'{data["workflow"].pk}_{data["run_id"]}')
-        wd = os.path.join('/tmp/nf_executor/', safe_path)
-
-        data['workdir'] = wd
+        data['logs_dir'] = storage.get_home()
 
         # First save: record work requested by user. The executor will save again once work has been scheduled.
         job = serializer.save()
 
-        # TODO: Make this configurable per workflow in the future, so executors can be replaced in local vs prod
+        # TODO: Make this configurable per workflow in the future, so runners can be replaced in local vs prod
         callback_uri = self.request.build_absolute_uri(
             reverse('nextflow:callback', kwargs={'pk': job.pk})
         )

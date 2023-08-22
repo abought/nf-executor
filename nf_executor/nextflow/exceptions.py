@@ -20,6 +20,18 @@ class UnknownEventException(BaseNextflowException):
     DEFAULT_MESSAGE = "Unrecognized nextflow trace event type"
 
 
-class StaleJobException(BaseNextflowException):
+class BadJobException(BaseNextflowException):
+    DEFAULT_MESSAGE = "Invalid job configuration"
+
+
+class StaleJobException(BadJobException):
     """Usually a developer error: job is in progress, complete, or canceled."""
     DEFAULT_MESSAGE = "Attempted to run a job with status other than 'submitted'."
+
+
+class StorageConfigException(BaseNextflowException):
+    DEFAULT_MESSAGE = "Storage is improperly configured"
+
+
+class StorageAccessException(BaseNextflowException):
+    DEFAULT_MESSAGE = "Specified file or folder does not exist"

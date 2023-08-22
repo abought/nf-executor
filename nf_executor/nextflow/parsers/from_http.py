@@ -1,12 +1,17 @@
 """
 Parse various types of weblog-via-http events from Nextflow
+
+These parsers are intended to update a model directly, and hence they populate existing model classes
+
+TODO: In the future, we want to use the same data container logic for both HTTP and trace logs. Unfortunately,
+    the event data available is so different that this is hard to reconcile right now.
 """
 from datetime import datetime
 import json
 import typing as ty
 
 from nf_executor.api import enums, models
-from .exceptions import UnknownEventException
+from nf_executor.nextflow.exceptions import UnknownEventException
 
 
 def parse_time(payload: dict) -> datetime:
@@ -107,12 +112,15 @@ def task_complete(job: models.Job, payload: dict) -> models.Task:
 def parse_event(job: models.Job, payload: ty.Union[str, dict]) -> ty.Union[models.Task, models.Job]:
     """Map an event name (from NF as string) into a Job or Task record, as appropriate"""
     known_events = {
-        enums.JobStatus.started.name: job_started,
-        enums.JobStatus.error.name: job_error,
-        enums.JobStatus.completed.name: job_completed,
-        enums.TaskStatus.process_submitted.name: task_submit,
-        enums.TaskStatus.process_started.name: task_start,
-        enums.TaskStatus.process_completed.name: task_complete,
+        # According to NF doc defined enumeration, http events are fixed constants
+        # Job events
+        'started': job_started,
+        'error': job_error,
+        'completed': job_completed,
+        # Task events
+        'process_submitted': task_submit,
+        'process_started': task_start,
+        'process_completed': task_complete,
     }
 
     if isinstance(payload, (str, bytes)):

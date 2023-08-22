@@ -2,7 +2,7 @@ Mock workflow. Used to verify logging features.
 
 ## Running the workflow
 ```bash
-$ nextflow run hello.nf -name insert_id_here -with-weblog http://127.0.0.1:8000/workflows/insert_id_here/report/ -with-report sample-report.html
+$ nextflow run hello.nf -name insert_id_here -with-weblog http://127.0.0.1:8000/workflows/insert_id_here/report/ -with-report sample-report.html -with-trace
 
 $ nextflow log insert_i_here
 $ nextflow clean -f

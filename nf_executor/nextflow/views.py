@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from nf_executor.api.models import Job
-from .parsers import  parse_event
+from nf_executor.nextflow.parsers.from_http import  parse_event
 
 
 logger = logging.getLogger(__name__)
@@ -35,6 +35,7 @@ class NextflowCallback(SingleObjectMixin, APIView):
         record = parse_event(job, request.body)
         record.save()
 
+        # NF doesn't look at the response: it doesn't even log if the callback is unreachable!
         return Response({
             'success': True,
             'record_id': record.pk,

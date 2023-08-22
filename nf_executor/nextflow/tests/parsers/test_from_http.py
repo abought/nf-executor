@@ -11,9 +11,9 @@ from nf_executor.api.tests.factories import (
     TaskFactory,
 )
 
-from nf_executor.nextflow import parsers
+from nf_executor.nextflow.parsers import from_http
 
-FIXTURE_DIR = os.path.join(os.path.dirname(__file__), 'fixtures')
+FIXTURE_DIR = os.path.join(os.path.dirname(__file__), '../fixtures')
 
 
 def get_job_started_event() -> dict:
@@ -52,7 +52,7 @@ def get_task_completed_event() -> dict:
 
 
 def get_full_event_stream() -> list[dict]:
-    fn = os.path.join(FIXTURE_DIR, 'nextflow-mock-full-eventstream.json')
+    fn = os.path.join(FIXTURE_DIR, 'nextflow-mock-full-http.json')
     with open(fn, 'r') as f:
         content = json.load(f)
     return content
@@ -67,7 +67,7 @@ class JobStatusParserTests(TestCase):
         )
 
         payload = get_job_started_event()
-        filled_job = parsers.parse_event(new_job, payload)
+        filled_job = from_http.parse_event(new_job, payload)
 
         filled_job.save()
         filled_job.refresh_from_db()
@@ -92,7 +92,7 @@ class JobStatusParserTests(TestCase):
         )
 
         payload = get_job_completed_event()
-        filled_job = parsers.parse_event(job, payload)
+        filled_job = from_http.parse_event(job, payload)
 
         filled_job.save()
         filled_job.refresh_from_db()
@@ -120,7 +120,7 @@ class TaskStatusParserTests(TestCase):
         self.assertEqual(self.running_job.task_set.count(), 0, 'Job has no tasks when created')
 
         payload = get_task_submitted_event()
-        task = parsers.parse_event(self.running_job, payload)
+        task = from_http.parse_event(self.running_job, payload)
 
         task.save()
         # self.running_job.refresh_from_db()  # update relationship set
@@ -132,7 +132,7 @@ class TaskStatusParserTests(TestCase):
         task = TaskFactory(job=self.running_job, task_id=1, is_completed=True)
 
         payload = get_task_submitted_event()
-        revised_task = parsers.parse_event(self.running_job, payload)
+        revised_task = from_http.parse_event(self.running_job, payload)
 
         revised_task.save()
         self.running_job.refresh_from_db()  # update relationship set
@@ -153,7 +153,7 @@ class TaskStatusParserTests(TestCase):
         task = TaskFactory(job=self.running_job, task_id=1, is_submitted=True)
 
         payload = get_task_started_event()
-        revised_task = parsers.parse_event(self.running_job, payload)
+        revised_task = from_http.parse_event(self.running_job, payload)
 
         revised_task.save()
         self.running_job.refresh_from_db()  # update relationship set
@@ -183,7 +183,7 @@ class TaskStatusParserTests(TestCase):
             'No task records before event received'
         )
         payload = get_task_started_event()
-        new_task = parsers.parse_event(self.running_job, payload)
+        new_task = from_http.parse_event(self.running_job, payload)
 
         new_task.save()
         self.running_job.refresh_from_db()  # update relationship set
@@ -198,7 +198,7 @@ class TaskStatusParserTests(TestCase):
         task = TaskFactory(job=self.running_job, task_id=1, is_completed=True)
 
         payload = get_task_completed_event()
-        revised_task = parsers.parse_event(self.running_job, payload)
+        revised_task = from_http.parse_event(self.running_job, payload)
 
         revised_task.save()
         self.running_job.refresh_from_db()  # update relationship set
@@ -228,7 +228,7 @@ class TaskStatusParserTests(TestCase):
             'No task records before event received'
         )
         payload = get_task_completed_event()
-        new_task = parsers.parse_event(self.running_job, payload)
+        new_task = from_http.parse_event(self.running_job, payload)
 
         new_task.save()
         self.running_job.refresh_from_db()  # update relationship set
@@ -248,7 +248,7 @@ class FullSequenceParserTests(TestCase):
         job = JobFactory(is_submitted=True)
 
         for record in events:
-            item = parsers.parse_event(job, record)
+            item = from_http.parse_event(job, record)
             item.save()
 
         job.refresh_from_db()

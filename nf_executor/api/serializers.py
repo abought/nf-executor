@@ -34,7 +34,7 @@ class JobSerializer(drf_serializers.ModelSerializer):
 
     class Meta:
         model = api_models.Job
-        # Signoff: Executor ID & workdir are used only for internal functions and not reported to consumers of the API
+        # Signoff: Executor ID & logs_dir are used only for internal functions and not reported to consumers of the API
         fields = (
             'run_id', 'workflow', 'params', 'owner',
             'status', 'expire_on', 'started_on', 'completed_on', 'duration',

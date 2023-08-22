@@ -28,8 +28,6 @@ class Workflow(TimeStampedModel):
         blank=False
     )
 
-    # executor  ## TODO: in future, some sort of plugin system for allowed executors (batch, subprocess, etc)
-
     definition_path = models.CharField(
         max_length=256,
         help_text="Depends on executor type. Folder location, container ARN, etc.",
@@ -77,12 +75,12 @@ class Job(TimeStampedModel):
         default=dict,
         help_text="User-specified params unique to this workflow"
     )
-    workdir = models.CharField(
+    logs_dir = models.CharField(
         max_length=256,
         blank=True,
         null=True,
-        help_text="Working directory where job specific files are stored. Managed by executor, not user."
-                  " TODO: special outputs, like NF trace files, should be accessible after job completes too."
+        help_text="Storage location for job-specific record files (like logs) that should be retained "
+                  "after job is completed. Other output locations might be specified via the params or job config."
     )
     owner = models.CharField(
         max_length=100,

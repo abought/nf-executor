@@ -1,7 +1,7 @@
 """
 Populate the database with sample data
 
-python3 scripts/populate_db.py
+python3 scripts/populate_db.py -j 1 -t 2
 """
 import argparse
 import os
@@ -22,13 +22,14 @@ from nf_executor.api.tests import factories
 
 
 def parse_args():
+    # By default just loads mock workflow, not any jobs
     parser = argparse.ArgumentParser(description='Populate the database')
     parser.add_argument('-j', '--n_jobs', dest='n_jobs',
-                        type=int, default=2,
+                        type=int, default=0,
                         help='# jobs to create')
 
     parser.add_argument('-t', '--n_tasks', dest='n_tasks',
-                        type=int, default=10,
+                        type=int, default=0,
                         help='# tasks to create')
     return parser.parse_args()
 
