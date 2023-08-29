@@ -8,9 +8,38 @@ from .base import AbstractExecutor
 
 from django.utils import timezone
 
-from nf_executor.api import enums, models
+from nf_executor.api import models
+from nf_executor.api.enums import JobStatus
+
 
 logger = logging.getLogger(__name__)
+
+
+def is_running(pid: int) -> bool:
+    """Check if a process is still running (UNIX only). h/t https://stackoverflow.com/a/6940314"""
+    if pid < 0:
+        return False
+    if pid == 0:
+        # According to "man 2 kill" PID 0 refers to every process
+        # in the process group of the calling process.
+        # On certain systems 0 is a valid PID, but we have no way
+        # to know that in a portable fashion.
+        raise ValueError('invalid PID 0')
+    try:
+        os.kill(pid, 0)
+    except OSError as err:
+        if err.errno == errno.ESRCH:
+            # ESRCH == No such process
+            return False
+        elif err.errno == errno.EPERM:
+            # EPERM clearly means there's a process to deny access to
+            return True
+        else:
+            # According to "man 2 kill" possible error values are
+            # (EINVAL, EPERM, ESRCH)
+            raise
+    else:
+        return True
 
 
 class SubprocessExecutor(AbstractExecutor):
@@ -20,7 +49,7 @@ class SubprocessExecutor(AbstractExecutor):
 
     """
     def cancel(self, job: models.Job) -> models.Job:
-        if job.status == enums.JobStatus.completed:
+        if job.status == JobStatus.completed:
             logger.info(f'Cancel request for job {job.pk} was ignored because job already finished')
             return job
 
@@ -28,12 +57,12 @@ class SubprocessExecutor(AbstractExecutor):
         # Note: this is dicey if NF doesn't actually kill the process, but subprocess executor isn't meant to be perfect.
         # TODO: How are tasks handled when NF is killed? Does this need special handling for different compute engines?
 
-        job.status = enums.JobStatus.cancel_pending
+        job.status = JobStatus.cancel_pending
         job.save()
 
         signal_accepted = self._cancel_to_engine(job)
         if not signal_accepted:
-            job.status = enums.JobStatus.unknown
+            job.status = JobStatus.unknown
             job.save()
             return job
 
@@ -49,8 +78,18 @@ class SubprocessExecutor(AbstractExecutor):
         job.save()
         return job
 
-    def _query_remote_state(self, job: models.Job):
-        raise NotImplementedError
+    def _check_run_state(self, job: models.Job) -> JobStatus:
+        # PID based execution doesn't keep queue or records, so we have only two states (running or not)
+        # That's kind of annoying for guessing error states, so this will return "unknown" status and defer
+        #   to trace file as source of truth on job status (`_query_remote_state`)
+        pid = int(job.executor_id)
+
+        ok = is_running(pid)
+        if ok:
+            return JobStatus.started
+        else:
+            # Can't get exit code by PID after it's done. Return unknown, and let the reconciliation engine check logs
+            return JobStatus.unknown
 
     def _params_fn(self, job: models.Job) -> str:
         # Subprocess executor uses a local filesystem, so unlike s3, it matters if prefix doesn't exist.

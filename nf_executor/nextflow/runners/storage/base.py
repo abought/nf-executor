@@ -15,7 +15,7 @@ class AbstractJobStorage(abc.ABC):
     Helper methods for job storage.
 
     Used so that runners can read and query different storage types, like saving logs to local volume vs s3
-    (usually, job temp files will be written to disk. This has a narrow and specific use case)
+      (usually, other temp files will be written to disk. This abstraction has a narrow and specific use case)
     """
     def __init__(self, logs_dir: str, root: str = None):
         self._path = logs_dir

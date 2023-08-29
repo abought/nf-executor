@@ -2,12 +2,15 @@ import abc
 import dataclasses as dc
 import json
 import logging
+import typing as ty
 
 from django.conf import settings
 
 from nf_executor.api import enums, models
+from nf_executor.api.enums import JobStatus
 
 from nf_executor.nextflow import exceptions as exc
+from nf_executor.nextflow.parsers.from_trace import parse_tracelog
 from nf_executor.nextflow.runners.storage.base import AbstractJobStorage
 
 logger = logging.getLogger(__name__)
@@ -102,6 +105,19 @@ class AbstractExecutor(abc.ABC):
         else:
             return self._query_local_state(job)
 
+    def reconcile_job_status(self, job: models.Job) -> (enums.JobStatus, bool):
+        """Check job status, and force updates to the DB as needed"""
+        actual = self._query_remote_state(job)
+        expected = self._query_local_state(job)
+
+        is_ok = actual == expected
+        if not is_ok:
+            logger.warning(f"Job status conflict for {job.run_id}. Will update from {expected} to {actual}")
+            job.status = actual
+            job.save()
+
+        return (actual, is_ok)
+
     def check_job_tasks(self, job: models.Job) -> TaskCounter:
         """
         Reports number of tasks currently running for this job, based on database event records.
@@ -146,7 +162,7 @@ class AbstractExecutor(abc.ABC):
         logs_dir = job.logs_dir
 
         params_fn = self._params_fn(job)
-        trace_fn = self._trace_fn(logs_dir, job)
+        trace_fn = self._trace_fn(job)
         log_fn = self._stable_storage.relative(f'nf_log_{job.run_id}.txt')
         report_fn = self._stable_storage.relative(f'report-{job.run_id}.html')
 
@@ -182,38 +198,61 @@ class AbstractExecutor(abc.ABC):
         """Rely on the DB for job execution status. This is almost always how external tools will check status"""
         return enums.JobStatus(job.status)
 
+    def _query_remote_state(self, job: models.Job) -> ty.Union[JobStatus, int]:
+        """
+        Determine the job status from three questions:
+
+         1. Is it running?
+         2. Does the database agree?
+         3. If it is not running, can we infer job state by looking at the trace file records?
+        """
+        dbv = job.status
+        if JobStatus.is_resolved(dbv):
+            # If the job has been marked as resolved in any form, assume no further info needed from exec engine
+            return dbv
+
+        actual_status = self._check_run_state(job)
+
+        if dbv == JobStatus.cancel_pending:
+            # An explicit cancel request takes precedence over other status.
+            if JobStatus.is_active(actual_status):
+                # The nextflow executor is still running, so we are "still cancel pending"
+                return dbv
+            else:
+                # Cancel has succeeded
+                return JobStatus.canceled
+
+        if actual_status != JobStatus.unknown:
+            # If the executor can tell us exit code / completion, great! Use that.
+            return actual_status
+
+        # If the executor can't tell us status, we can try to guess job result from a trace file. This is especially
+        #   useful for executors like "subprocess" where we may not have exit code info after process is ended.
+
+        # Job is not running, and this is not explained by recorded callback events. Reconcile status using trace log!
+        trace_fn = self._trace_fn(job)
+        try:
+            trace_contents = self._stable_storage.read_contents(trace_fn)
+        except:
+            # No records of process running, and no records of output. Reconciliation is not possible.
+            # Flag permanent loss of records for auditing/ retry
+            logger.error(f'Could not locate trace file expected to reconcile job {job.run_id}')
+            return JobStatus.unknown
+
+        parsed = parse_tracelog(trace_contents)
+        resolved = parsed.final_status()
+
+        return JobStatus.task_to_job(resolved)
+
     @abc.abstractmethod
-    def _query_remote_state(self, job: models.Job):
+    def _check_run_state(self, job: models.Job) -> JobStatus:
         """
-        Queries the execution engine to determine if the task is running. This may use one or multiple artifacts.
+        Is the job actively running on the executor?
 
-        Must handle the following scenarios:
-        - (error) Nextflow failed immediately upon start, and didn't bother to send an error to the monitor service
-            (eg can happen with malformed params file)
-
-        - (normal) Job not started, but execution engine says it is in the queue
-        - (error) Job not started, and not in queue
-
-        - (normal) Job running
-        - (normal) Job not running: because it completed
-        - (error) Job not running: DB says it should be, but executor says it isn't
-
-
-        IMPORTANT: Certain kinds of error, like invalid params file or arguments, do not result in NF sending an
-           error report to the callback URL!!
+        Returns a job status code, which should be one of {submitted, started, error, completed, unknown}. This can
+         check both active process and any queue as needed.
         """
-        # Strategy: parse trace file and compare to DB events
-
-        #
         raise NotImplementedError
-
-    # @abc.abstractmethod
-    # def _get_trace_file_contents(self, job: models.Job):
-    #     """
-    #     Execution engine may store files in different places (s3, local disk, etc)
-    #     TODO: how do we want to abstract storage vs engine? Ok to assume coupling in most cases?
-    #     """
-    #     raise NotImplementedError
 
     ##############
     # Helpers: names of key files that are used in multiple places (e.g. writing a trace file, then checking it)
@@ -221,6 +260,6 @@ class AbstractExecutor(abc.ABC):
         """Path to params file"""
         return self._stable_storage.relative(f'nextflow_params_{job.run_id}.json')
 
-    def _trace_fn(self, logs_dir: str, job: models.Job) -> str:
+    def _trace_fn(self, job: models.Job) -> str:
         """Path to nextflow execution trace file"""
         return self._stable_storage.relative(f'trace_{job.run_id}.txt')

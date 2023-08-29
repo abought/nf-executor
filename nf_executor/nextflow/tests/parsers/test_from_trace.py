@@ -17,7 +17,7 @@ def get_trace_contents() -> str:
 
 class TestFromTrace(TestCase):
     def setUp(self) -> None:
-        self.content = get_trace_contents()
+        self.content: str = get_trace_contents()
 
     def test_parser_reads_log(self):
         items = from_trace.parse_tracelog(self.content)
@@ -27,8 +27,9 @@ class TestFromTrace(TestCase):
         )
         self.assertEqual(len(items), 7, 'Parses one record per line')
 
-    def test_parser_consolidates_items(self):
-        items = from_trace.parse_tracelog(self.content, consolidate=True)
+    def test_helper_consolidates_items(self):
+        items = from_trace.parse_tracelog(self.content)
+        items = items.consolidate()
         self.assertEqual(len(items), 4, 'Parses consolidates items')
         self.assertListEqual(
             [item.task_id for item in items],
@@ -41,4 +42,17 @@ class TestFromTrace(TestCase):
             [TaskStatus.COMPLETED, TaskStatus.COMPLETED, TaskStatus.COMPLETED, TaskStatus.FAILED],
             'Consolidation chooses the highest status for all tasks'
         )
+
+    def test_helper_checks_abort(self):
+        items = from_trace.parse_tracelog(self.content)
+        del items[-2]  # Remove the "failed" record for last task, so that the list consolidates to "aborted"
+        self.assertTrue(items.any_aborted(), 'Detects aborted items in record collection')
+
+    def test_helper_checks_failed(self):
+        items = from_trace.parse_tracelog(self.content)
+        self.assertTrue(items.any_failed(), 'Detects failed items in record collection')
+
+    def test_helper_checks_all_complete(self):
+        items = from_trace.parse_tracelog(self.content)[:3]  # Remove task 4 (the failed item) from sample dataset
+        self.assertTrue(items.all_complete(), 'Verifies all items in record collection were completed')
 

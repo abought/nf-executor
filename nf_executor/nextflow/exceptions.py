@@ -35,3 +35,7 @@ class StorageConfigException(BaseNextflowException):
 
 class StorageAccessException(BaseNextflowException):
     DEFAULT_MESSAGE = "Specified file or folder does not exist"
+
+
+class TaskStateException(BaseNextflowException):
+    DEFAULT_MESSAGE = "Cannot identify job or task state"
