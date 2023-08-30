@@ -133,9 +133,9 @@ class AbstractExecutor(abc.ABC):
         return TaskCounter(
             # TODO: Replace with proper group by query once we have some records to test against
             #   https://stackoverflow.com/questions/19101665/how-to-do-select-count-group-by-and-order-by-in-django
-            job.task_set.filter(status=enums.TaskStatus.process_submitted).count(),
-            job.task_set.filter(status=enums.TaskStatus.process_started).count(),
-            job.task_set.filter(status=enums.TaskStatus.process_completed).count(),
+            job.task_set.filter(status=enums.TaskStatus.SUBMITTED).count(),
+            job.task_set.filter(status=enums.TaskStatus.RUNNING).count(),
+            job.task_set.filter(status=enums.TaskStatus.COMPLETED).count(),
         )
 
     def cancel(self, job):

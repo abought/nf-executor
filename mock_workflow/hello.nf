@@ -19,6 +19,10 @@ process SPLITLETTERS {
 }
 
 process CONVERTTOUPPER {
+    // Can use this to test retry logic,
+    errorStrategy 'retry'
+    maxErrors 10
+
     input:
     path y
 
@@ -26,7 +30,11 @@ process CONVERTTOUPPER {
     stdout
 
     script:
+    // Can add "(exit 1) to this script when we need to capture examples of abort/retry/error logic
+    // Or for retries that eventually succeed...
+    //     (( RANDOM%2 == 0 )) && (exit 0) || (exit 1)
     """
+    (( RANDOM%2 == 0 )) && (exit 0) || (exit 1)
     cat $y | tr '[a-z]' '[A-Z]'
     """
 }

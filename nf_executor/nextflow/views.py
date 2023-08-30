@@ -27,7 +27,7 @@ class NextflowCallback(SingleObjectMixin, APIView):
 
     def post(self, request: HttpRequest, pk):
         try:
-            # As a safeguard, job IDs are included in callback URLs.
+            # As a safeguard, job IDs are included in callback URLs. We use this to associate tasks with the right job.
             job = self.get_object()
         except Job.DoesNotExist as e:
             logger.critical(f'Received nextflow job status for a job that does not exist: {pk}')

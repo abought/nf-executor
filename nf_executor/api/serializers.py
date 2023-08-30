@@ -4,7 +4,6 @@ Serializers for workflow executor API
 Note that there is no write serializer for tasks, because
 
 """
-
 from rest_framework import serializers as drf_serializers
 
 from . import models as api_models
@@ -17,6 +16,8 @@ class WorkflowSerializer(drf_serializers.ModelSerializer):
 
 
 class JobSerializer(drf_serializers.ModelSerializer):
+    status = drf_serializers.CharField(source='get_status_display', read_only=True)
+
     def validate(self, data):
         # Workaround: Two column unique constraints are not handled properly by DRF
         # This method can be removed upon fix for this issue:
@@ -46,7 +47,13 @@ class JobSerializer(drf_serializers.ModelSerializer):
 
 
 class TaskSerializer(drf_serializers.ModelSerializer):
-    """Typically used as read only serializer; tasks are populated via monitor callbacks unique to workflow engine"""
+    """
+    Typically used as read only serializer; tasks are populated via monitor callbacks unique to workflow engine
+    """
+    status = drf_serializers.CharField(source='get_status_display', read_only=True)
+
     class Meta:
+        # All fields are marked read only
         model = api_models.Task
         fields = ('job', 'name', 'status', 'submitted_on', 'started_on', 'completed_on')
+        read_only_fields = ('job', 'name', 'status', 'submitted_on', 'started_on', 'completed_on')

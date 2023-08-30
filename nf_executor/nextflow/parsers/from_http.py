@@ -30,15 +30,18 @@ def job_started(job: models.Job, payload: dict) -> models.Job:
 
 
 def job_error(job: models.Job, payload: dict) -> models.Job:
-    """An error code overrides any other status"""
-    job.status = enums.JobStatus.error
+    """
+    Job error. This HTTP event has very little info; the good stuff is in the "completed" event sent after this one
+    """
+    if job.status != enums.JobStatus.cancel_pending:
+        # If we tell nextflow to stop, then we can ignore the error status: "yeah, we know about this"
+        job.status = enums.JobStatus.error
     return job
 
 
 def job_completed(job: models.Job, payload: dict) -> models.Job:
     """
     Job completion notice.
-    Override any other status (incl error state) because there are data cleanup ramifications
 
     In the future, we'd like to treat this like a state machine (only allow transition if job state was started)
 
@@ -47,7 +50,17 @@ def job_completed(job: models.Job, payload: dict) -> models.Job:
     metadata = payload['metadata']
 
     job.completed_on = parse_time(payload)
-    job.status = enums.JobStatus.completed
+
+    # The "completion" event does not mean the job succeeded, esp since our system adds custom statuses
+    if job.status == enums.JobStatus.cancel_pending:
+        status = enums.JobStatus.canceled
+    elif metadata['workflow']['success']:
+        status = enums.JobStatus.completed
+    else:
+        # We already received an error event separately, but make sure status is recorded explicitly
+        status = enums.JobStatus.error
+
+    job.status = status
 
     # Capture metadata seen only in job completion events
     job.duration = metadata['workflow']['duration']
@@ -72,7 +85,7 @@ def task_submit(job: models.Job, payload: dict) -> models.Task:
     task.name = metadata['name']
 
     # Values that might conflict under race condition
-    task.status = max(task.status, enums.TaskStatus.process_submitted)
+    task.status = max(task.status, enums.TaskStatus.SUBMITTED)
 
     return task
 
@@ -89,14 +102,14 @@ def task_start(job: models.Job, payload: dict) -> models.Task:
     task.started_on = parse_time(payload)
 
     # Values that might conflict under race condition
-    task.status = max(task.status, enums.TaskStatus.process_started)
+    task.status = max(task.status, enums.TaskStatus.RUNNING)
 
     return task
 
 
 def task_complete(job: models.Job, payload: dict) -> models.Task:
     """
-    Update a task record once a task completes. Completion does not mean success
+    Update a task record once a task completes. Completion *does not* mean success.
     """
     metadata = payload['trace']
     task_id = metadata['task_id']
@@ -104,10 +117,11 @@ def task_complete(job: models.Job, payload: dict) -> models.Task:
 
     # Completion event is always the source of truth for these fields
     task.completed_on = parse_time(payload)
-    task.exit_code = metadata['exit']  # Note: start events report a dummy value of 2^31-1 (aka max of a 32 bit signed int)
+    task.exit_code = metadata['exit']  # Note: some events report dummy value of 2^31-1 (aka max of a 32 bit signed int)
 
-    # Values that might conflict under race condition
-    task.status = max(task.status, enums.TaskStatus.process_completed)
+    # Unlike other events, "complete" is ambiguous. Draw the status from the trace section of the payload.
+    status = metadata['status']
+    task.status = enums.TaskStatus[status]
 
     return task
 

@@ -132,6 +132,8 @@ class SubprocessExecutor(AbstractExecutor):
         try:
             # WARNING: This DOES NOT VERIFY that PID is the thing originally scheduled. It could be reused.
             #    The subprocess executor is NOT PRODUCTION GRADE and so this is a simplistic implementation.
+
+            # In the event of a gentle sigterm, NF will send a completed event + error report to http
             os.kill(int(job.executor_id), signal.SIGTERM)
         except OSError as e:
             if e.errno == errno.ESRCH:

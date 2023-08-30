@@ -16,7 +16,7 @@ class JobStatus(ModelHelper, IntEnum):
     # Known nextflow Workflow statuses: https://www.nextflow.io/docs/latest/tracing.html#weblog-via-http
     started = 10
     completed = 40
-    error = 50  # Is this a task or job state? NF docs unclear
+    error = 50  # NF http will send both an error AND a completed ("status: error") event. Error wins for final status.
 
     # Not provided by nextflow- managed by this system
     submitted = 0  # Nextflow was scheduled to run, but we have not yet received events
@@ -64,20 +64,16 @@ class TaskStatus(ModelHelper, IntEnum):
     NEW = 0
     SUBMITTED = 10
     RUNNING = 20
+
+    # These imply "task finished, and here's how"
     ABORTED = 30
     FAILED = 40
-    COMPLETED = 50
-
-    # HTTP log statuses. Alignment with trace log statuses is best-guess.
-    #   Interesting to note that not all task states are reported!
-    process_submitted = 10
-    process_started = 20
-    process_completed = 50
+    COMPLETED = 50  # AFAICT, retries are represented as a new task ID, but just in case use C > F ordering
 
     @classmethod
     def is_active(cls, status):
-        return status in {cls.NEW, cls.process_submitted, cls.process_started, cls.RUNNING}
+        return status in {cls.NEW, cls.SUBMITTED, cls.RUNNING}
 
     @classmethod
     def is_resolved(cls, status):
-        return status in {cls.ABORTED, cls.FAILED, cls.COMPLETED, cls.process_completed}
+        return status in {cls.ABORTED, cls.FAILED, cls.COMPLETED}

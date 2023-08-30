@@ -160,7 +160,7 @@ class Task(TimeStampedModel):
         help_text="Task name as specified by NF",
     )
 
-    status = models.IntegerField(choices=TaskStatus.choices(), default=TaskStatus.process_submitted)
+    status = models.IntegerField(choices=TaskStatus.choices(), default=TaskStatus.SUBMITTED)
     exit_code = models.IntegerField(null=True, help_text="Exit code of the process (once completed)")
 
     # Timestamps, in the TRACE field of records

@@ -145,7 +145,7 @@ class TaskStatusParserTests(TestCase):
 
         self.assertEqual(
             revised_task.status,
-            TaskStatus.process_completed.value,
+            TaskStatus.COMPLETED.value,
             'Higher status is not overridden'
         )
 
@@ -166,7 +166,7 @@ class TaskStatusParserTests(TestCase):
 
         self.assertEqual(
             revised_task.status,
-            TaskStatus.process_started.value,
+            TaskStatus.RUNNING.value,
             'Task status of existing record was updated in place'
         )
 
@@ -211,7 +211,7 @@ class TaskStatusParserTests(TestCase):
 
         self.assertEqual(
             revised_task.status,
-            TaskStatus.process_completed.value,
+            TaskStatus.COMPLETED.value,
             'Task status of existing record was updated in place'
         )
 
@@ -255,7 +255,7 @@ class FullSequenceParserTests(TestCase):
 
         self.assertEqual(job.task_set.count(), 3, 'Three task records created')
         self.assertEqual(
-            job.task_set.filter(status=TaskStatus.process_completed.value).count(),
+            job.task_set.filter(status=TaskStatus.COMPLETED.value).count(),
             3,
             'All task records completed'
         )

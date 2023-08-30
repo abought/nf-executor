@@ -133,20 +133,22 @@ class TaskFactory(DjangoModelFactory):
         is_submitted = factory.Trait(
             started_on=None,
             completed_on=None,
-            status=enums.TaskStatus.process_submitted.value,
+            status=enums.TaskStatus.SUBMITTED.value,
             native_id=None,
             exit_code=None,
         )
 
         is_started = factory.Trait(
-            status=enums.TaskStatus.process_started.value,
+            status=enums.TaskStatus.RUNNING.value,
             native_id="abc12",
             exit_code=None,
             completed_on=None,
         )
 
         is_completed = factory.Trait(
-            status=enums.TaskStatus.process_completed.value,
+            status=enums.TaskStatus.COMPLETED.value,
         )
 
-        # is_error = factory.Trait()  # Does NF ever communicate this about tasks?
+        is_error = factory.Trait(
+            status=enums.TaskStatus.FAILED.value,
+        )
