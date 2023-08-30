@@ -24,7 +24,7 @@ urlpatterns = [
         include('nf_executor.api.urls', namespace='apiv1'),
     ),
     path(
-        '/nextflow/',
+        'nextflow/',
         include('nf_executor.nextflow.urls', namespace='nextflow'),
     ),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

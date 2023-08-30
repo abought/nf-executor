@@ -15,8 +15,8 @@ class JobStatus(ModelHelper, IntEnum):
     """
     # Known nextflow Workflow statuses: https://www.nextflow.io/docs/latest/tracing.html#weblog-via-http
     started = 10
-    error = 40  # Is this a task or job state? NF docs unclear
-    completed = 50
+    completed = 40
+    error = 50  # Is this a task or job state? NF docs unclear
 
     # Not provided by nextflow- managed by this system
     submitted = 0  # Nextflow was scheduled to run, but we have not yet received events

@@ -3,7 +3,8 @@ Views used for nextflow reporting callbacks
 """
 import logging
 
-from django.http import HttpRequest
+from django.conf import settings
+from django.http import HttpRequest, HttpResponse
 from django.views.generic.detail import SingleObjectMixin
 
 from rest_framework.views import APIView
@@ -40,4 +41,39 @@ class NextflowCallback(SingleObjectMixin, APIView):
             'success': True,
             'record_id': record.pk,
             'job': job.pk
+        })
+
+
+if settings.DEBUG:
+    import json
+    from django.views.decorators.csrf import csrf_exempt
+
+    items = []  # Store items from the whole workflow until end
+
+
+    @csrf_exempt
+    def json_capture(request):
+        """
+        A simple endpoint for debugging/verification purposes.
+         Captures raw HTTP payloads from a single nextflow process run manually outside the app.
+
+        *Everything about this code is a hack*, but it's useful for characterizing NF behavior
+        """
+        global items
+
+        if request.method == 'POST':
+            payload = json.loads(request.body)
+            event = payload['event']
+            run_id = payload['runId']
+
+            items.append(payload)
+
+            if event == 'completed':
+                with open(f'captured_{run_id}.json', 'w') as f:
+                    json.dump(items, f)
+
+                items = []
+
+        return HttpResponse({
+            'accepted': True
         })

@@ -30,8 +30,9 @@ def job_started(job: models.Job, payload: dict) -> models.Job:
 
 
 def job_error(job: models.Job, payload: dict) -> models.Job:
-    # FIXME: So yeah, there's that
-    raise NotImplementedError('Need to capture example of failure state payload')
+    """An error code overrides any other status"""
+    job.status = enums.JobStatus.error
+    return job
 
 
 def job_completed(job: models.Job, payload: dict) -> models.Job:
@@ -94,7 +95,9 @@ def task_start(job: models.Job, payload: dict) -> models.Task:
 
 
 def task_complete(job: models.Job, payload: dict) -> models.Task:
-    """Update a task record once a task completes"""
+    """
+    Update a task record once a task completes. Completion does not mean success
+    """
     metadata = payload['trace']
     task_id = metadata['task_id']
     task, _ = models.Task.objects.get_or_create(job=job, task_id=task_id)

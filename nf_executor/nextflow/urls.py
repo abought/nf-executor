@@ -1,5 +1,5 @@
 # TODO Write this!!
-'jobs/<pk>/nextflow_callback'
+from django.conf import settings
 from django.urls import path
 
 import nf_executor.api.views.workflows
@@ -14,3 +14,8 @@ app_name = 'api'
 urlpatterns = [
     path('jobs/<pk>/callback/', views.NextflowCallback.as_view(), name='callback'),
 ]
+
+if settings.DEBUG:
+    urlpatterns.append(
+        path('json_capture_debug/', views.json_capture, name='json_capture_debug'),
+    )
