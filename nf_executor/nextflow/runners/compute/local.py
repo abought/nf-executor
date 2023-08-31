@@ -48,27 +48,23 @@ class SubprocessExecutor(AbstractExecutor):
         ONLY used for dev/testing, and even then we should usually use celery.
 
     """
-    def cancel(self, job: models.Job) -> models.Job:
+    def cancel(self) -> models.Job:
+        job = self._job
         if job.status == JobStatus.completed:
-            logger.info(f'Cancel request for job {job.pk} was ignored because job already finished')
+            logger.info(f'Cancel request for job {job.run_id} was ignored because job already finished')
             return job
 
-        logger.info(f'Manually killing job {job.pk}')
-        # Note: this is dicey if NF doesn't actually kill the process, but subprocess executor isn't meant to be perfect.
-        # TODO: How are tasks handled when NF is killed? Does this need special handling for different compute engines?
-
+        logger.info(f'Manually killing job {job.run_id}')
         job.status = JobStatus.cancel_pending
         job.save()
 
-        signal_accepted = self._cancel_to_engine(job)
+        signal_accepted = self._cancel_to_engine()
         if not signal_accepted:
             job.status = JobStatus.unknown
             job.save()
             return job
 
         # Update job fields once cancel confirmed
-        # TODO move this to "cancel confirmed" celery task
-        # TODO: Does nextflow send an event when the job is killed this way? (characterize how it works)
         job.expire_on = timezone.now()  # Tell background worker to clean up working directories
         job.completed_on = timezone.now()
 
@@ -78,10 +74,11 @@ class SubprocessExecutor(AbstractExecutor):
         job.save()
         return job
 
-    def _check_run_state(self, job: models.Job) -> JobStatus:
+    def _check_run_state(self) -> JobStatus:
         # PID based execution doesn't keep queue or records, so we have only two states (running or not)
         # That's kind of annoying for guessing error states, so this will return "unknown" status and defer
         #   to trace file as source of truth on job status (`_query_remote_state`)
+        job = self._job
         pid = int(job.executor_id)
 
         ok = is_running(pid)
@@ -91,20 +88,11 @@ class SubprocessExecutor(AbstractExecutor):
             # Can't get exit code by PID after it's done. Return unknown, and let the reconciliation engine check logs
             return JobStatus.unknown
 
-    def _params_fn(self, job: models.Job) -> str:
-        # Subprocess executor uses a local filesystem, so unlike s3, it matters if prefix doesn't exist.
-        logs_dir = job.logs_dir
-        if not os.path.isdir(logs_dir):
-            os.makedirs(logs_dir)
-
-        return super()._params_fn(job)
-
-    def _submit_to_engine(self, job: models.Job, callback_uri: str, *args, **kwargs) -> str:
+    def _submit_to_engine(self, callback_uri: str, *args, **kwargs) -> str:
         """
         Submit a job to the execution engine
-
-        TODO: Verify that NF runners can upload report/trace files to s3 and no further file handling is needed
         """
+        job = self._job
         args = self._generate_workflow_options(job, callback_uri, *args, **kwargs)
 
         logger.debug(f"Submitting job '{job.run_id}' to executor '{self.__class__.__name__}' with options {args}")
@@ -123,12 +111,11 @@ class SubprocessExecutor(AbstractExecutor):
         logger.info(f"Executor accepted job '{job.run_id}' and assigned identifier '{pid}'")
         return pid
 
-    def _cancel_to_engine(self, job: models.Job) -> bool:
+    def _cancel_to_engine(self) -> bool:
         """
         Kill the job
-
-        TODO Test this! Current mock workflow is very short duration and hard to cancel
         """
+        job = self._job
         try:
             # WARNING: This DOES NOT VERIFY that PID is the thing originally scheduled. It could be reused.
             #    The subprocess executor is NOT PRODUCTION GRADE and so this is a simplistic implementation.

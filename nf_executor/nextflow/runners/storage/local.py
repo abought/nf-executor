@@ -9,6 +9,13 @@ logger = logging.getLogger(__name__)
 
 class LocalStorage(AbstractJobStorage):
     """Helpers for content in local storage"""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Make sure the directory exists before we try to use it. (unlike S3, prefix matters!)
+        if not os.path.isdir(self._path):
+            os.makedirs(self._path)
+
     def setup(self):
         wd = self._path
         if not os.path.isdir(wd):

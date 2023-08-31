@@ -110,8 +110,8 @@ NF_EXECUTOR = {
     #  storage target to be configured separately for each workflow
     'compute': 'nf_executor.nextflow.runners.compute.SubprocessExecutor',
     'storage': 'nf_executor.nextflow.runners.storage.LocalStorage',
-    'workdir': '/tmp/nf_executor',   # Intermediate files during a run
-    'logs_dir': ROOT_DIR / 'wf-results',  # Where logs etc. are written. Can be s3 bucket.
+    'workdir': '/tmp/nf_executor/work',   # Intermediate files during a run
+    'logs_dir': '/tmp/nf_executor/logs',  # Where logs etc. are written. Can be s3 bucket.
 }
 
 WSGI_APPLICATION = 'config.wsgi.application'

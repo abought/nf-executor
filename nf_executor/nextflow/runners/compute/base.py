@@ -8,6 +8,7 @@ from django.conf import settings
 
 from nf_executor.api import enums, models
 from nf_executor.api.enums import JobStatus
+from nf_executor.api.models import Job
 
 from nf_executor.nextflow import exceptions as exc
 from nf_executor.nextflow.parsers.from_trace import parse_tracelog
@@ -40,11 +41,13 @@ class AbstractExecutor(abc.ABC):
     """
     def __init__(
             self,
+            job: Job,
             storage: AbstractJobStorage,
             workdir=settings.NF_EXECUTOR['workdir'],
             *args,
             **kwargs
     ):
+        self._job = job
         self._stable_storage = storage  # Persistent files like job config files and logs: exist before and after job
         self.workdir = workdir
 
@@ -52,7 +55,6 @@ class AbstractExecutor(abc.ABC):
     # Public interface
     def run(
             self,
-            job: models.Job,
             params: dict,
             callback_uri,
             *args,
@@ -63,6 +65,7 @@ class AbstractExecutor(abc.ABC):
 
         All nextflow tasks report execution via an HTTP callback URI
         """
+        job = self._job
         if not job.workflow:
             raise exc.BadJobException('Job must specify a valid workflow definition in order to run')
 
@@ -85,7 +88,7 @@ class AbstractExecutor(abc.ABC):
             return job
 
         try:
-            executor_id = self._submit_to_engine(job, callback_uri, *args, **kwargs)
+            executor_id = self._submit_to_engine(callback_uri, *args, **kwargs)
             job.executor_id = executor_id
         except:
             logger.exception(f"Error while submitting job {job.run_id}")
@@ -101,14 +104,15 @@ class AbstractExecutor(abc.ABC):
         A status update can optionally force checking of remote records. (typically only done via nightly celery task)
         """
         if force:
-            return self._query_remote_state(job)
+            return self._query_remote_state()
         else:
-            return self._query_local_state(job)
+            return self._query_local_state()
 
-    def reconcile_job_status(self, job: models.Job) -> (enums.JobStatus, bool):
+    def reconcile_job_status(self) -> (enums.JobStatus, bool):
         """Check job status, and force updates to the DB as needed"""
-        actual = self._query_remote_state(job)
-        expected = self._query_local_state(job)
+        job = self._job
+        actual = self._query_remote_state()
+        expected = self._query_local_state()
 
         is_ok = actual == expected
         if not is_ok:
@@ -118,13 +122,14 @@ class AbstractExecutor(abc.ABC):
 
         return (actual, is_ok)
 
-    def check_job_tasks(self, job: models.Job) -> TaskCounter:
+    def check_job_tasks(self) -> TaskCounter:
         """
         Reports number of tasks currently running for this job, based on database event records.
 
         NOTE: Not a reliable progress bar, because Nextflow may not know all work that has to be done at the start.
             (Example: during QC phase, NF won't have reported scheduling imputation chunks yet)
         """
+        job = self._job
         if job.status == enums.JobStatus.completed:
             return TaskCounter(0, 0, job.succeed_count)
         elif job.status in (enums.JobStatus.error, enums.JobStatus.canceled):
@@ -138,7 +143,7 @@ class AbstractExecutor(abc.ABC):
             job.task_set.filter(status=enums.TaskStatus.COMPLETED).count(),
         )
 
-    def cancel(self, job):
+    def cancel(self):
         raise NotImplementedError
 
     #######
@@ -150,7 +155,7 @@ class AbstractExecutor(abc.ABC):
         if params is None:
             params = {}
 
-        path = self._params_fn(job)
+        path = self._params_fn(job.run_id)
         self._stable_storage.write_contents(
             path,
             json.dumps(params, indent=2)
@@ -159,10 +164,9 @@ class AbstractExecutor(abc.ABC):
     def _generate_workflow_options(self, job: models.Job, callback_uri: str, *args, **kwargs) -> list[str]:
         """Generate the workflow options used by nextflow."""
         workflow_def = job.workflow.definition_path
-        logs_dir = job.logs_dir
 
-        params_fn = self._params_fn(job)
-        trace_fn = self._trace_fn(job)
+        params_fn = self._params_fn(job.run_id)
+        trace_fn = self._trace_fn(job.run_id)
         log_fn = self._stable_storage.relative(f'nf_log_{job.run_id}.txt')
         report_fn = self._stable_storage.relative(f'report-{job.run_id}.html')
 
@@ -179,14 +183,16 @@ class AbstractExecutor(abc.ABC):
             '-work-dir', self.workdir,
         ]
 
+        print(args)
+
         return args
 
     @abc.abstractmethod
-    def _submit_to_engine(self, job: models.Job, callback_uri: str, *args, **kwargs) -> str:
+    def _submit_to_engine(self, callback_uri: str, *args, **kwargs) -> str:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def _cancel_to_engine(self, job: models.Job) -> bool:
+    def _cancel_to_engine(self) -> bool:
         """
         Submit cancel signals for the job (and subprocesses if appropriate)
 
@@ -194,11 +200,11 @@ class AbstractExecutor(abc.ABC):
         """
         raise NotImplementedError
 
-    def _query_local_state(self, job: models.Job) -> enums.JobStatus:
+    def _query_local_state(self) -> enums.JobStatus:
         """Rely on the DB for job execution status. This is almost always how external tools will check status"""
-        return enums.JobStatus(job.status)
+        return enums.JobStatus(self._job.status)
 
-    def _query_remote_state(self, job: models.Job) -> ty.Union[JobStatus, int]:
+    def _query_remote_state(self) -> ty.Union[JobStatus, int]:
         """
         Determine the job status from three questions:
 
@@ -206,12 +212,14 @@ class AbstractExecutor(abc.ABC):
          2. Does the database agree?
          3. If it is not running, can we infer job state by looking at the trace file records?
         """
+        job = self._job
+
         dbv = job.status
         if JobStatus.is_resolved(dbv):
             # If the job has been marked as resolved in any form, assume no further info needed from exec engine
             return dbv
 
-        actual_status = self._check_run_state(job)
+        actual_status = self._check_run_state()
 
         if dbv == JobStatus.cancel_pending:
             # An explicit cancel request takes precedence over other status.
@@ -230,7 +238,7 @@ class AbstractExecutor(abc.ABC):
         #   useful for executors like "subprocess" where we may not have exit code info after process is ended.
 
         # Job is not running, and this is not explained by recorded callback events. Reconcile status using trace log!
-        trace_fn = self._trace_fn(job)
+        trace_fn = self._trace_fn(job.run_id)
         try:
             trace_contents = self._stable_storage.read_contents(trace_fn)
         except:
@@ -245,7 +253,7 @@ class AbstractExecutor(abc.ABC):
         return JobStatus.task_to_job(resolved)
 
     @abc.abstractmethod
-    def _check_run_state(self, job: models.Job) -> JobStatus:
+    def _check_run_state(self) -> JobStatus:
         """
         Is the job actively running on the executor?
 
@@ -256,10 +264,10 @@ class AbstractExecutor(abc.ABC):
 
     ##############
     # Helpers: names of key files that are used in multiple places (e.g. writing a trace file, then checking it)
-    def _params_fn(self, job: models.Job) -> str:
+    def _params_fn(self, run_id: str) -> str:
         """Path to params file"""
-        return self._stable_storage.relative(f'nextflow_params_{job.run_id}.json')
+        return self._stable_storage.relative(f'nextflow_params_{run_id}.json')
 
-    def _trace_fn(self, job: models.Job) -> str:
+    def _trace_fn(self, run_id: str) -> str:
         """Path to nextflow execution trace file"""
-        return self._stable_storage.relative(f'trace_{job.run_id}.txt')
+        return self._stable_storage.relative(f'trace_{run_id}.txt')
