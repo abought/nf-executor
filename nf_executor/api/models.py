@@ -118,8 +118,11 @@ class Job(TimeStampedModel):
 
     tracker = FieldTracker()  # Internal: use to track and respond to field changes
 
+    def __str__(self):
+        return f'{self.pk} - {self.run_id}'
+
     def save(self, *args, **kwargs):
-        if self.tracker.has_changed('status') and self.status == JobStatus.completed:
+        if self.tracker.has_changed('status') and JobStatus.is_resolved(self.status):
             self.expire_on = timezone.now() + timedelta(days=30)
 
         super().save(*args, **kwargs)
@@ -185,3 +188,35 @@ class Task(TimeStampedModel):
                 name='Task per job'
             )
         ]
+
+
+def _default_heartbeat_message():
+    return {"message": ""}
+
+
+class JobHeartbeat(TimeStampedModel):
+    """
+    A workflow may optionally send JSON formatted heartbeat messages to communicate about task progress
+    This only works if the job supports sending such messages, and is given a callback URL to do so.
+
+    Care must be taken to ensure that the workflow actually
+    """
+    job = models.ForeignKey(
+        Job,
+        on_delete=models.SET_NULL,
+        null=True,
+        help_text="The job that this message belongs to",
+        db_index=True
+    )
+    label = models.CharField(
+        max_length=50,
+        null=False,
+        blank=False,
+        help_text="Identify the type of message being sent"
+    )
+    message = models.JSONField(
+        blank=False,
+        null=False,
+        default=_default_heartbeat_message,
+        help_text="User-specified params unique to this workflow"
+    )

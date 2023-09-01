@@ -5,6 +5,8 @@ import logging
 import typing as ty
 
 from django.conf import settings
+from django.utils import timezone
+
 
 from nf_executor.api import enums, models
 from nf_executor.api.enums import JobStatus
@@ -108,14 +110,14 @@ class AbstractExecutor(abc.ABC):
         else:
             return self._query_local_state()
 
-    def reconcile_job_status(self) -> (enums.JobStatus, bool):
+    def reconcile_job_status(self, save=True) -> (enums.JobStatus, bool):
         """Check job status, and force updates to the DB as needed"""
         job = self._job
         actual = self._query_remote_state()
         expected = self._query_local_state()
 
         is_ok = actual == expected
-        if not is_ok:
+        if not is_ok and save:
             logger.warning(f"Job status conflict for {job.run_id}. Will update from {expected} to {actual}")
             job.status = actual
             job.save()
@@ -143,8 +145,33 @@ class AbstractExecutor(abc.ABC):
             job.task_set.filter(status=enums.TaskStatus.COMPLETED).count(),
         )
 
-    def cancel(self):
-        raise NotImplementedError
+    def cancel(self) -> models.Job:
+        job = self._job
+        if not JobStatus.is_active(job.status):
+            logger.info(f'Cancel request for job {job.run_id} was ignored because job is not in an active state')
+            return job
+
+        # First save: we tried to cancel
+        logger.info(f'Manually killing job {job.run_id}')
+        job.status = JobStatus.cancel_pending
+        job.save()
+
+        signal_accepted = self._cancel_to_engine()
+        if not signal_accepted:
+            logger.error(f'Failed to cancel job {job.run_id}')
+            job.status = JobStatus.unknown
+            job.save()
+            return job
+
+        # Second save: Update meta job fields once cancel signal confirmed
+        job.expire_on = timezone.now()  # Tell background worker to clean up working directories
+        job.completed_on = timezone.now()
+
+        delta = job.completed_on - job.started_on
+        job.duration = delta.seconds * 1000  # nf specifies in ms, and so do we
+
+        job.save()
+        return job
 
     #######
     # Private / internal methods

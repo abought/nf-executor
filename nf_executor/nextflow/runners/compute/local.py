@@ -6,7 +6,6 @@ import subprocess
 
 from .base import AbstractExecutor
 
-from django.utils import timezone
 
 from nf_executor.api import models
 from nf_executor.api.enums import JobStatus
@@ -48,32 +47,6 @@ class SubprocessExecutor(AbstractExecutor):
         ONLY used for dev/testing, and even then we should usually use celery.
 
     """
-    def cancel(self) -> models.Job:
-        job = self._job
-        if job.status == JobStatus.completed:
-            logger.info(f'Cancel request for job {job.run_id} was ignored because job already finished')
-            return job
-
-        logger.info(f'Manually killing job {job.run_id}')
-        job.status = JobStatus.cancel_pending
-        job.save()
-
-        signal_accepted = self._cancel_to_engine()
-        if not signal_accepted:
-            job.status = JobStatus.unknown
-            job.save()
-            return job
-
-        # Update job fields once cancel confirmed
-        job.expire_on = timezone.now()  # Tell background worker to clean up working directories
-        job.completed_on = timezone.now()
-
-        delta = job.completed_on - job.started_on
-        job.duration = delta.seconds * 1000  # nf specifies in ms, and so do we
-
-        job.save()
-        return job
-
     def _check_run_state(self) -> JobStatus:
         # PID based execution doesn't keep queue or records, so we have only two states (running or not)
         # That's kind of annoying for guessing error states, so this will return "unknown" status and defer

@@ -22,7 +22,7 @@ from nf_executor.api.tests import factories
 
 
 def parse_args():
-    # By default just loads mock workflow, not any jobs
+    # By default, just loads mock workflow, not any jobs
     parser = argparse.ArgumentParser(description='Populate the database')
     parser.add_argument('-j', '--n_jobs', dest='n_jobs',
                         type=int, default=0,

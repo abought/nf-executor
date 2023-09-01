@@ -21,6 +21,7 @@ process SPLITLETTERS {
 process CONVERTTOUPPER {
     // Can use this to test retry logic,
     errorStrategy 'retry'
+    maxRetries 10
     maxErrors 10
 
     input:

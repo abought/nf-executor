@@ -1,11 +1,12 @@
 import os
 
-from django.conf import settings
 from django.urls import reverse
 from django.utils.text import get_valid_filename
-from rest_framework import generics
+from rest_framework import generics, status
+from rest_framework.response import Response
 
 from nf_executor.api import models, serializers
+from nf_executor.api.enums import JobStatus
 from nf_executor.nextflow.runners import get_runner
 
 
@@ -17,7 +18,7 @@ class JobListView(generics.ListCreateAPIView):
     serializer_class = serializers.JobSerializer
 
     ordering = ('-created',)
-    search_fields = ('workflow_id', 'owner')
+    filterset_fields = ('workflow', 'owner')
 
     def perform_create(self, serializer: serializers.JobSerializer):
         """
@@ -41,3 +42,38 @@ class JobListView(generics.ListCreateAPIView):
             reverse('nextflow:callback', kwargs={'pk': job.pk})
         )
         runner.run(job.params, callback_uri)
+
+
+class JobDetailView(generics.RetrieveDestroyAPIView):
+    """
+    Once a job is created, it can be viewed (to check status), updated (to force reconciliation of status), or deleted
+        (to schedule cancellation)
+
+    If you suspect that downtime has caused job tracking to fail, force detailed check using the query param
+        `?force_check=True`. This is a synchronous operation that may involve checking resource APIs,
+        and we ask that end users minimize use of this feature.
+
+    (have no fear: reconciliation will be done automatically on a scheduled background process.)
+    """
+    queryset = models.Job.objects.all()
+    serializer_class = serializers.JobSerializer
+
+    def get_object(self):
+        """
+        Slight hack. GET is generally idempotent, but we allow this because it's making the DB more accurate
+        """
+        job = super().get_object()
+        if self.request.method == 'GET' and self.request.query_params.get('force_check'):
+            runner = get_runner(job)
+            runner.reconcile_job_status(save=True)
+        return job
+
+    def delete(self, request, *args, **kwargs):
+        """Keep the model, but allow the runner engine to stop job and mark it canceled"""
+        job = self.get_object()
+        if not JobStatus.is_active(job):
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        runner = get_runner(job)
+        runner.cancel()
+        return Response(status=status.HTTP_204_NO_CONTENT)
