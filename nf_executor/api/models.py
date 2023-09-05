@@ -45,7 +45,7 @@ class Workflow(TimeStampedModel):
         ]
 
 
-def future_date(days=30):
+def _future_date(days=30):
     return timezone.now() + timedelta(days=days)
 
 
@@ -90,6 +90,11 @@ class Job(TimeStampedModel):
         db_index=True,
     )
 
+    callback_token = models.BinaryField(
+        null=False,
+        help_text='(simplistic) token that can be used for reporter callbacks (like nextflow)'
+    )
+
     #######
     # Fields managed internally by executor service
     executor_id = models.CharField(
@@ -101,7 +106,7 @@ class Job(TimeStampedModel):
 
     # Time and history tracking. Submission is tracked by TSM `created` field automatically
     expire_on = models.DateTimeField(
-        default=future_date,
+        default=_future_date,
         help_text="30 days after submission OR 7 days after completion"
     )
 

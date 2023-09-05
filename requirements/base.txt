@@ -11,5 +11,6 @@ drf-orjson-renderer~=1.7.1
 
 # Misc
 # --------------------------
+bcrypt==4.0.1
 orjson~=3.9.1
 

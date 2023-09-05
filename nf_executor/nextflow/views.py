@@ -2,19 +2,51 @@
 Views used for nextflow reporting callbacks
 """
 import logging
+from datetime import timedelta
 
 from django.conf import settings
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpResponse
 from django.views.generic.detail import SingleObjectMixin
 
-from rest_framework.views import APIView
+from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
+from nf_executor.api.auth import check_password
 from nf_executor.api.models import Job
 from nf_executor.nextflow.parsers.from_http import  parse_event
 
 
 logger = logging.getLogger(__name__)
+
+
+def check_auth_for_job_event(job, nonce):
+    """
+    Basic authentication check for URL query param based callbacks
+
+    NEVER USE URL BASED AUTH IN EXTERNAL ENDPOINTS, because then the "real" password value gets captured in logs etc
+        (we don't store in DB, but there are other ways to store something)
+
+    This mechanism is designed for Nextflow's internal HTTP callbacks, which don't support custom headers or payloads.
+    """
+    if not nonce:
+        raise AuthenticationFailed('No nonce provided')
+
+    # Once a job is done, stop accepting new events (with a tiny grace period for out of order event delivery)
+    if job.completed_on:
+        end = job.completed_on + timedelta(hours=1)
+    else:
+        end = job.expire_on
+
+    try:
+        res = check_password(nonce, job.callback_token, expire_time=end)
+    except:
+        logger.debug('Unknown failure in password check')
+        res = False
+
+    if res is False:
+        raise AuthenticationFailed('Invalid or expired nonce on callback')
 
 
 class NextflowCallback(SingleObjectMixin, APIView):
@@ -25,13 +57,15 @@ class NextflowCallback(SingleObjectMixin, APIView):
     http_method_names = ('post',)
     queryset = Job.objects.all()
 
-    def post(self, request: HttpRequest, pk):
+    def post(self, request: Request, pk):
         try:
             # As a safeguard, job IDs are included in callback URLs. We use this to associate tasks with the right job.
             job = self.get_object()
         except Job.DoesNotExist as e:
             logger.critical(f'Received nextflow job status for a job that does not exist: {pk}')
             raise e
+
+        check_auth_for_job_event(job, request.query_params.get('nonce'))
 
         record = parse_event(job, request.body)
         record.save()

@@ -58,7 +58,7 @@ class AbstractExecutor(abc.ABC):
     def run(
             self,
             params: dict,
-            callback_uri,
+            callback_url,
             *args,
             **kwargs
     ) -> models.Job:
@@ -90,7 +90,7 @@ class AbstractExecutor(abc.ABC):
             return job
 
         try:
-            executor_id = self._submit_to_engine(callback_uri, *args, **kwargs)
+            executor_id = self._submit_to_engine(callback_url, *args, **kwargs)
             job.executor_id = executor_id
         except:
             logger.exception(f"Error while submitting job {job.run_id}")
@@ -188,7 +188,7 @@ class AbstractExecutor(abc.ABC):
             json.dumps(params, indent=2)
         )
 
-    def _generate_workflow_options(self, job: models.Job, callback_uri: str, *args, **kwargs) -> list[str]:
+    def _generate_workflow_options(self, job: models.Job, callback_url: str, *args, **kwargs) -> list[str]:
         """Generate the workflow options used by nextflow."""
         workflow_def = job.workflow.definition_path
 
@@ -204,18 +204,16 @@ class AbstractExecutor(abc.ABC):
             '-params-file', params_fn,
             '-name', job.run_id,
             '-with-trace', trace_fn,
-            '-with-weblog', callback_uri,
+            '-with-weblog', callback_url,
             '-with-report', report_fn,
             # Workflow definition and report files are written to root of workdir location, other files go under that
             '-work-dir', self.workdir,
         ]
 
-        print(args)
-
         return args
 
     @abc.abstractmethod
-    def _submit_to_engine(self, callback_uri: str, *args, **kwargs) -> str:
+    def _submit_to_engine(self, callback_url: str, *args, **kwargs) -> str:
         raise NotImplementedError
 
     @abc.abstractmethod

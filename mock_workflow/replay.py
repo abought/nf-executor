@@ -9,7 +9,8 @@ import orjson
 
 
 async def post_record(client, record: object):
-    return await client.post("http://127.0.0.1:8000/workflows/insert_id_here/report/", json=record)
+    # Example URL: fill in a job ID + credentials required
+    return await client.post("http://127.0.0.1:8000/nextflow/jobs/insert_id_here/?nonce=abc123", json=record)
 
 
 async def main():

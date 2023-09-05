@@ -6,6 +6,7 @@ import factory
 from factory.django import DjangoModelFactory
 
 from .. import enums, models
+from ..auth import gen_password
 
 
 def sem_version() -> str:
@@ -54,11 +55,13 @@ class JobFactory(DjangoModelFactory):
 
     params = factory.LazyFunction(dict)
 
+    callback_token = factory.LazyFunction(lambda: gen_password(b'password123'))
+
     owner = factory.Faker('email', safe=True)
     executor_id = factory.Faker('md5', raw_output=False)
     status = factory.LazyFunction(random_job_status)
 
-    expire_on = factory.Faker('date_time', tzinfo=datetime.timezone.utc)
+    # expire_on = factory.Faker('date_time', tzinfo=datetime.timezone.utc)  # Model has a default value
     started_on = factory.Faker('date_time', tzinfo=datetime.timezone.utc)
     completed_on = factory.Faker('date_time', tzinfo=datetime.timezone.utc)
 
@@ -90,8 +93,17 @@ class JobFactory(DjangoModelFactory):
             retries_count=0
         )
 
+        is_unknown = factory.Trait(
+            status=enums.JobStatus.unknown.value,
+            completed_on=None,
+            executor_id='42',
+            duration=0,
+            succeed_count=0,
+            retries_count=0
+        )
+
         is_completed = factory.Trait(
-            status=enums.JobStatus.started.value,
+            status=enums.JobStatus.completed.value,
             executor_id='42',
             duration=1000,
             succeed_count=5,
@@ -101,6 +113,7 @@ class JobFactory(DjangoModelFactory):
         is_error = factory.Trait(
             #  TODO capture error records, then write error trait
             status=enums.JobStatus.error.value,
+            completed_on=datetime.datetime.utcnow(),
         )
 
         is_canceled = factory.Trait(

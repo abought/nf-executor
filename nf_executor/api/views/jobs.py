@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from nf_executor.api import models, serializers
 from nf_executor.api.enums import JobStatus
 from nf_executor.nextflow.runners import get_runner
+from nf_executor.nextflow.util import get_callback_url
 
 
 class JobListView(generics.ListCreateAPIView):
@@ -38,10 +39,8 @@ class JobListView(generics.ListCreateAPIView):
         job = serializer.save()
 
         runner = get_runner(job)
-        callback_uri = self.request.build_absolute_uri(
-            reverse('nextflow:callback', kwargs={'pk': job.pk})
-        )
-        runner.run(job.params, callback_uri)
+        callback_url = get_callback_url(self.request, job)
+        runner.run(job.params, callback_url)
 
 
 class JobDetailView(generics.RetrieveDestroyAPIView):
