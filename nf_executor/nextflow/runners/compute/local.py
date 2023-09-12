@@ -6,8 +6,6 @@ import subprocess
 
 from .base import AbstractExecutor
 
-
-from nf_executor.api import models
 from nf_executor.api.enums import JobStatus
 
 

@@ -46,6 +46,12 @@ class JobSerializer(drf_serializers.ModelSerializer):
         )
 
 
+class JobDetailSerializer(JobSerializer):
+    """Detail view includes additional information which is more expensive to calculate"""
+    class Meta(JobSerializer.Meta):
+        fields = JobSerializer.Meta.fields + ('progress',)
+
+
 class TaskSerializer(drf_serializers.ModelSerializer):
     """
     Typically used as read only serializer; tasks are populated via monitor callbacks unique to workflow engine

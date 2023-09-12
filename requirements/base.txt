@@ -6,11 +6,12 @@ django~=4.2.3
 django-environ~=0.10.0  # https://github.com/joke2k/django-environ
 djangorestframework~=3.14.0
 django-model-utils~=4.3.1  # https://github.com/jazzband/django-model-utils
-django-filter==23.2  # https://github.com/carltongibson/django-filter/
+django-filter~=23.2  # https://github.com/carltongibson/django-filter/
 drf-orjson-renderer~=1.7.1
 
 # Misc
 # --------------------------
-bcrypt==4.0.1
+bcrypt~=4.0.1
+boto3~=1.28.43
 orjson~=3.9.1
 

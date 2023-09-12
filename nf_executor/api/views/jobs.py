@@ -19,7 +19,7 @@ class JobListView(generics.ListCreateAPIView):
     serializer_class = serializers.JobSerializer
 
     ordering = ('-created',)
-    filterset_fields = ('workflow', 'owner')
+    filterset_fields = ('workflow', 'owner', 'status')
 
     def perform_create(self, serializer: serializers.JobSerializer):
         """
@@ -49,13 +49,13 @@ class JobDetailView(generics.RetrieveDestroyAPIView):
         (to schedule cancellation)
 
     If you suspect that downtime has caused job tracking to fail, force detailed check using the query param
-        `?force_check=True`. This is a synchronous operation that may involve checking resource APIs,
+        `?force_check=True`. This is a SYNCHRONOUS OPERATION that may involve checking resource APIs,
         and we ask that end users minimize use of this feature.
 
     (have no fear: reconciliation will be done automatically on a scheduled background process.)
     """
     queryset = models.Job.objects.all()
-    serializer_class = serializers.JobSerializer
+    serializer_class = serializers.JobDetailSerializer
 
     def get_object(self):
         """

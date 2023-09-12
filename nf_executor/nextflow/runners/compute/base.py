@@ -46,12 +46,14 @@ class AbstractExecutor(abc.ABC):
             job: Job,
             storage: AbstractJobStorage,
             workdir=settings.NF_EXECUTOR['workdir'],
+            queue=settings.NF_EXECUTOR['queue'],
             *args,
             **kwargs
     ):
         self._job = job
         self._stable_storage = storage  # Persistent files like job config files and logs: exist before and after job
-        self.workdir = workdir
+        self.workdir = workdir  # Intermediate storage during job run; may be deleted when runner exits
+        self._queue = queue
 
     ##########
     # Public interface
@@ -93,7 +95,7 @@ class AbstractExecutor(abc.ABC):
             executor_id = self._submit_to_engine(callback_url, *args, **kwargs)
             job.executor_id = executor_id
         except:
-            logger.exception(f"Error while submitting job {job.run_id}")
+            logger.exception("Error while submitting job %s", job.run_id)
             job.status = enums.JobStatus.error
 
         job.save()  # Second save: record work scheduled by system, incl result of attempts to schedule job
@@ -219,7 +221,8 @@ class AbstractExecutor(abc.ABC):
     @abc.abstractmethod
     def _cancel_to_engine(self) -> bool:
         """
-        Submit cancel signals for the job (and subprocesses if appropriate)
+        Submit cancel signals for the job (and subprocesses if appropriate). The return value typically means
+            "a request to kill was acknowledged". It does not guarantee that the process or dependent tasks are stopped.
 
         Ideally, this should also schedule a celery process to confirm the kill signal after a specified time
         """
@@ -250,13 +253,13 @@ class AbstractExecutor(abc.ABC):
             # An explicit cancel request takes precedence over other status.
             if JobStatus.is_active(actual_status):
                 # The nextflow executor is still running, so we are "still cancel pending"
-                return dbv
+                return JobStatus.cancel_pending
             else:
                 # Cancel has succeeded
                 return JobStatus.canceled
 
         if actual_status != JobStatus.unknown:
-            # If the executor can tell us exit code / completion, great! Use that.
+            # If the executor can tell us running state or completion (exit code 0), great! Use that.
             return actual_status
 
         # If the executor can't tell us status, we can try to guess job result from a trace file. This is especially

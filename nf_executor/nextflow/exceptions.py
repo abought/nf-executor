@@ -12,6 +12,10 @@ class BaseNextflowException(Exception):
         return str(self.message)
 
 
+class InvalidRunnerException(BaseNextflowException):
+    DEFAULT_MESSAGE = "Runner is missing required configuration options"
+
+
 class UnknownEventException(BaseNextflowException):
     """
     If we receive an event we don't know how to parse, this may indicate that Nextflow has changed the event schema.
@@ -38,4 +42,14 @@ class StorageAccessException(BaseNextflowException):
 
 
 class TaskStateException(BaseNextflowException):
-    DEFAULT_MESSAGE = "Cannot identify job or task state"
+    """
+    This error might be raised if the integration with nextflow or runner changes, eg new enum values or payload format
+    """
+    DEFAULT_MESSAGE = "Cannot identify task state"
+
+
+class JobStateException(BaseNextflowException):
+    """
+    This error might be raised if the integration with nextflow or runner changes, eg new enum values or payload format
+    """
+    DEFAULT_MESSAGE = "Cannot identify job state"

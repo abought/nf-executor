@@ -108,8 +108,11 @@ REST_FRAMEWORK = {
 NF_EXECUTOR = {
     # TODO: Provide production settings to override this. For full production system, consider allowing
     #  storage target to be configured separately for each workflow
+    # HOW to run and store results
     'compute': 'nf_executor.nextflow.runners.compute.SubprocessExecutor',
     'storage': 'nf_executor.nextflow.runners.storage.LocalStorage',
+    # WHERE to run and store results
+    'queue': None,  # In production, ARN of a batch queue for NF processes (can be different from queue used for tasks)
     'workdir': '/tmp/nf_executor/work',   # Intermediate files during a run
     'logs_dir': '/tmp/nf_executor/logs',  # Where logs etc. are written. Can be s3 bucket.
 }

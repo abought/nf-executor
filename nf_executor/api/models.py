@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from django.db import models
+from django.db.models import Count
 from django.utils import timezone
 
 from .enums import (JobStatus, TaskStatus)
@@ -122,6 +123,18 @@ class Job(TimeStampedModel):
     retries_count = models.IntegerField(default=0)
 
     tracker = FieldTracker()  # Internal: use to track and respond to field changes
+
+    @property
+    def progress(self):
+        """
+        This can be used as a partial progress indicator, but it's imperfect because NF may not submit some tasks
+        until a prior step in the workflow has completed.
+        """
+        counts_query = self.task_set.values('status').annotate(count=Count('status'))
+        return {
+            TaskStatus(item['status']).name: item['count']
+            for item in counts_query
+        }
 
     def __str__(self):
         return f'{self.pk} - {self.run_id}'
