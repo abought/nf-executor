@@ -13,11 +13,13 @@ class HeartbeatListView(generics.ListCreateAPIView):
     serializer_class = serializers.HeartbeatSerializer
 
     ordering = ('-created',)
-    search_fields = ('label',)
+    search_fields = ('label', 'message')
 
     def get_queryset(self):
         job_id = self.kwargs['job_id']
-        if not models.Job.objects.filter(pk=job_id).exists():
+        try:
+            job = models.Job.objects.get(pk=job_id)
+        except models.Job.DoesNotExist:
             raise NotFound('Specified job ID does not exist')
 
-        return models.JobHeartbeat.objects.filter(job=job_id)
+        return job.jobheartbeat_set.all()

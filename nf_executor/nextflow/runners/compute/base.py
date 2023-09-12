@@ -26,7 +26,7 @@ class TaskCounter:
     completed: int
 
 
-class AbstractExecutor(abc.ABC):
+class AbstractRunner(abc.ABC):
     """
     Handle all aspects of running a job on a particular platform: AWS batch, local subprocess, slurm, etc
 
@@ -125,27 +125,6 @@ class AbstractExecutor(abc.ABC):
             job.save()
 
         return (actual, is_ok)
-
-    def check_job_tasks(self) -> TaskCounter:
-        """
-        Reports number of tasks currently running for this job, based on database event records.
-
-        NOTE: Not a reliable progress bar, because Nextflow may not know all work that has to be done at the start.
-            (Example: during QC phase, NF won't have reported scheduling imputation chunks yet)
-        """
-        job = self._job
-        if job.status == enums.JobStatus.completed:
-            return TaskCounter(0, 0, job.succeed_count)
-        elif job.status in (enums.JobStatus.error, enums.JobStatus.canceled):
-            return TaskCounter(0, 0, 0)
-
-        return TaskCounter(
-            # TODO: Replace with proper group by query once we have some records to test against
-            #   https://stackoverflow.com/questions/19101665/how-to-do-select-count-group-by-and-order-by-in-django
-            job.task_set.filter(status=enums.TaskStatus.SUBMITTED).count(),
-            job.task_set.filter(status=enums.TaskStatus.RUNNING).count(),
-            job.task_set.filter(status=enums.TaskStatus.COMPLETED).count(),
-        )
 
     def cancel(self) -> models.Job:
         job = self._job

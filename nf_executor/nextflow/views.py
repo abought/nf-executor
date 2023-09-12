@@ -13,7 +13,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from nf_executor.api.auth import check_password
+from nf_executor.nextflow.auth import check_password
 from nf_executor.api.models import Job
 from nf_executor.nextflow.parsers.from_http import  parse_event
 

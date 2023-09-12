@@ -6,7 +6,7 @@ import factory
 from factory.django import DjangoModelFactory
 
 from .. import enums, models
-from ..auth import gen_password
+from nf_executor.nextflow.auth import gen_password
 
 
 def sem_version() -> str:

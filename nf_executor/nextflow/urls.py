@@ -1,12 +1,6 @@
-# TODO Write this!!
 from django.conf import settings
 from django.urls import path
 
-import nf_executor.api.views.workflows
-
-import nf_executor.api.views.jobs
-
-import nf_executor.api.views.tasks
 from . import views
 
 

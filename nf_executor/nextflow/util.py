@@ -3,7 +3,7 @@ import uuid
 from django.urls import reverse
 from django.utils.http import urlencode
 
-from nf_executor.api.auth import gen_password
+from nf_executor.nextflow.auth import gen_password
 from nf_executor.api.models import Job
 
 

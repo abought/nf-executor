@@ -11,6 +11,7 @@ app_name = 'api'
 urlpatterns = [
     path('workflows/', workflows.WorkflowListView.as_view(), name='workflows-list'),
 
+    # NOTE: I considered nesting under workflows/, but may want to query "all jobs for a user regardless of workflow".
     path('jobs/', jobs.JobListView.as_view(), name='jobs-list'),
     path('jobs/<pk>/', jobs.JobDetailView.as_view(), name='jobs-detail'),
 

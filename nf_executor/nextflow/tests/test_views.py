@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from rest_framework.exceptions import AuthenticationFailed
 
-from nf_executor.api.auth import gen_password
+from nf_executor.nextflow.auth import gen_password
 from nf_executor.api.tests.factories import JobFactory
 from nf_executor.nextflow.views import check_auth_for_job_event
 

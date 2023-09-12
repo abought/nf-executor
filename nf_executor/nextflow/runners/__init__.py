@@ -5,7 +5,7 @@ from django.conf import settings
 
 
 from nf_executor.api.models import Job
-from .compute.base import AbstractExecutor
+from .compute.base import AbstractRunner
 from .storage.base import AbstractJobStorage
 
 
@@ -17,7 +17,7 @@ def _get_class_from_string(path: str):
     return getattr(mod, clp)
 
 
-def get_runner(job: Job, *args, **kwargs) -> AbstractExecutor:
+def get_runner(job: Job, *args, **kwargs) -> AbstractRunner:
     """Get a compute executor for the designated workflow"""
     storage = get_storage(job.logs_dir, *args, **kwargs)
     return _CC(

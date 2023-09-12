@@ -5,7 +5,7 @@ import logging
 import botocore.exceptions
 import boto3
 
-from .base import AbstractExecutor
+from .base import AbstractRunner
 
 from nf_executor.api.enums import JobStatus
 from nf_executor.nextflow.exceptions import JobStateException, InvalidRunnerException
@@ -25,7 +25,7 @@ def find_first(iterable, predicate=lambda x: False):
 
 # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/batch/client/submit_job.html
 
-class AWSBatchRunner(AbstractExecutor):
+class AWSBatchRunner(AbstractRunner):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

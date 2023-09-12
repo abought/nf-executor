@@ -4,7 +4,7 @@ import os
 import signal
 import subprocess
 
-from .base import AbstractExecutor
+from .base import AbstractRunner
 
 from nf_executor.api.enums import JobStatus
 
@@ -39,7 +39,7 @@ def is_running(pid: int) -> bool:
         return True
 
 
-class SubprocessExecutor(AbstractExecutor):
+class SubprocessRunner(AbstractRunner):
     """
     Execute jobs in a subprocess worker that continues running on same host, even after the web app stops.
         ONLY used for dev/testing, and even then we should usually use celery.

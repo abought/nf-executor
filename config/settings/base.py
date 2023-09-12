@@ -109,7 +109,7 @@ NF_EXECUTOR = {
     # TODO: Provide production settings to override this. For full production system, consider allowing
     #  storage target to be configured separately for each workflow
     # HOW to run and store results
-    'compute': 'nf_executor.nextflow.runners.compute.SubprocessExecutor',
+    'compute': 'nf_executor.nextflow.runners.compute.SubprocessRunner',
     'storage': 'nf_executor.nextflow.runners.storage.LocalStorage',
     # WHERE to run and store results
     'queue': None,  # In production, ARN of a batch queue for NF processes (can be different from queue used for tasks)

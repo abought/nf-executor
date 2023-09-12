@@ -208,10 +208,6 @@ class Task(TimeStampedModel):
         ]
 
 
-def _default_heartbeat_message():
-    return {"message": ""}
-
-
 class JobHeartbeat(TimeStampedModel):
     """
     A workflow may optionally send JSON formatted heartbeat messages to communicate about task progress
@@ -235,6 +231,6 @@ class JobHeartbeat(TimeStampedModel):
     message = models.JSONField(
         blank=False,
         null=False,
-        default=_default_heartbeat_message,
+        default=dict,
         help_text="User-specified params unique to this workflow"
     )

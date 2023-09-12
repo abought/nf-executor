@@ -1,6 +1,5 @@
 import os
 
-from django.urls import reverse
 from django.utils.text import get_valid_filename
 from rest_framework import generics, status
 from rest_framework.response import Response
