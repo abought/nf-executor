@@ -77,6 +77,3 @@ class AbstractJobStorage(abc.ABC):
     def _delete(self, path):
         """Internal implementation per storage subclass"""
         raise NotImplementedError
-
-
-

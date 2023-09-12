@@ -11,11 +11,11 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
 ]
 
-## FIXME: Temporary until docker setup with postgres
+# FIXME: Temporary until docker setup with postgres
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': ROOT_DIR / 'db.sqlite3',
+        'NAME': ROOT_DIR / 'db.sqlite3',  # noqa
     }
 }
 
@@ -40,4 +40,3 @@ DEBUG_TOOLBAR_CONFIG = {
 #     import socket
 #     hostname, _, ips = socket.gethostbyname_ex(socket.gethostname())
 #     INTERNAL_IPS += [ip[:-1] + '1' for ip in ips]
-

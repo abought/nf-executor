@@ -27,4 +27,3 @@ def check_password(provided, actual, expire_time: 'datetime.datetime' = None) ->
         provided = bytes.fromhex(provided)
 
     return bcrypt.checkpw(provided, actual)
-

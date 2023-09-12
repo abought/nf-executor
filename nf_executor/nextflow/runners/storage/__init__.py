@@ -1,1 +1,1 @@
-from .local import LocalStorage
+from .local import LocalStorage  # noqa

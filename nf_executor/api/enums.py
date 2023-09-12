@@ -58,7 +58,7 @@ class TaskStatus(ModelHelper, IntEnum):
     Uppercase (may) be used by trace. It seems that some runners only ever write the completed items:
         https://www.nextflow.io/docs/latest/tracing.html#trace-report
 
-    The final numeric values are our best guess (in terms of both ordinal ranking, and mapping across systems). They do not represent official doc statements
+    The final numeric values are our best guess (in terms of both ordinal ranking, and mapping across systems).
     """
     # TRACE log statuses
     NEW = 0

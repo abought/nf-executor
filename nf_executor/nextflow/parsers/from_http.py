@@ -21,7 +21,9 @@ def parse_time(payload: dict) -> datetime:
 
 def job_started(job: models.Job, payload: dict) -> models.Job:
     """
-    Update job status. If events are out of order, this is the authority for start time but should not override a later status event
+    Update job status.
+
+    If events are out of order, this is the authority for start time but should not override info from other events.
     """
     job.started_on = parse_time(payload)
     job.status = max(job.status, enums.JobStatus.started)  # in case of out of order events, don't overwrite
@@ -33,8 +35,8 @@ def job_error(job: models.Job, payload: dict) -> models.Job:
     """
     Job error. This HTTP event has very little info; the good stuff is in the "completed" event sent after this one
     """
-    if job.status != enums.JobStatus.cancel_pending:
-        # If we tell nextflow to stop, then we can ignore the error status: "yeah, we know about this"
+    if job.status != enums.JobStatus.cancel_pending and job.status != enums.JobStatus.canceled:
+        # If we TOLD nextflow to stop, then we can ignore the error status: "yeah, we know why you're failing"
         job.status = enums.JobStatus.error
     return job
 
@@ -97,7 +99,7 @@ def task_start(job: models.Job, payload: dict) -> models.Task:
     task, _ = models.Task.objects.get_or_create(job=job, task_id=task_id)
 
     # Start event is always the source of truth for these fields
-    # TODO What happens if a task restarts/fails? Are restarts provided as a unique new task ID? If not, how should we track them for a more accurate picture of resource usage?
+    # TODO Characterize best way to dedup task restarts: is a new native ID issues? Are names unique?
     task.native_id = metadata['native_id']
     task.started_on = parse_time(payload)
 

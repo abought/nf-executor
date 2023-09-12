@@ -1,2 +1,2 @@
-from .local import SubprocessRunner
-from .aws_batch import AWSBatchRunner
+from .local import SubprocessRunner  # noqa
+from .aws_batch import AWSBatchRunner  # noqa

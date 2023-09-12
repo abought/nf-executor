@@ -46,7 +46,7 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": ROOT_DIR / "db.sqlite3",
-    } #env.db('DATABASE_URL', ''),
+    }  # env.db('DATABASE_URL', ''),
 }
 DATABASES['default']['ATOMIC_REQUESTS'] = True
 

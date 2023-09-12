@@ -112,7 +112,7 @@ class AbstractRunner(abc.ABC):
         else:
             return self._query_local_state()
 
-    def reconcile_job_status(self, save=True) -> (enums.JobStatus, bool):
+    def reconcile_job_status(self, save=True) -> ty.Tuple[enums.JobStatus, bool]:
         """Check job status, and force updates to the DB as needed"""
         job = self._job
         actual = self._query_remote_state()
@@ -178,7 +178,7 @@ class AbstractRunner(abc.ABC):
         log_fn = self._stable_storage.relative(f'nf_log_{job.run_id}.txt')
         report_fn = self._stable_storage.relative(f'report-{job.run_id}.html')
 
-        args = [
+        res = [
             'nextflow',
             '-log', log_fn,
             'run', workflow_def,
@@ -191,7 +191,7 @@ class AbstractRunner(abc.ABC):
             '-work-dir', self.workdir,
         ]
 
-        return args
+        return res
 
     @abc.abstractmethod
     def _submit_to_engine(self, callback_url: str, *args, **kwargs) -> str:

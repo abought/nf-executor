@@ -33,7 +33,7 @@ class TestFromTrace(TestCase):
         self.assertEqual(len(items), 4, 'Parses consolidates items')
         self.assertListEqual(
             [item.task_id for item in items],
-            [ '1', '2', '3', '4'],
+            ['1', '2', '3', '4'],
             'Consolidator returns one item per task reported'
         )
 
@@ -55,4 +55,3 @@ class TestFromTrace(TestCase):
     def test_helper_checks_all_complete(self):
         items = from_trace.parse_tracelog(self.content)[:3]  # Remove task 4 (the failed item) from sample dataset
         self.assertTrue(items.all_complete(), 'Verifies all items in record collection were completed')
-

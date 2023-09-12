@@ -15,7 +15,7 @@ from rest_framework.views import APIView
 
 from nf_executor.nextflow.auth import check_password
 from nf_executor.api.models import Job
-from nf_executor.nextflow.parsers.from_http import  parse_event
+from nf_executor.nextflow.parsers.from_http import parse_event
 
 
 logger = logging.getLogger(__name__)
@@ -83,7 +83,6 @@ if settings.DEBUG:
     from django.views.decorators.csrf import csrf_exempt
 
     items = []  # Store items from the whole workflow until end
-
 
     @csrf_exempt
     def json_capture(request):

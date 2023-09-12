@@ -29,7 +29,7 @@ class JobSerializer(drf_serializers.ModelSerializer):
 
         if api_models.Job.objects.filter(run_id=data['run_id'], workflow=data['workflow']).exists():
             raise drf_serializers.ValidationError({
-                'error': f'run_id must be unique per workflow'
+                'error': 'run_id must be unique per workflow'
             })
         return data
 

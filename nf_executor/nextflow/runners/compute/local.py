@@ -59,12 +59,12 @@ class SubprocessRunner(AbstractRunner):
             # Can't get exit code by PID after it's done. Return unknown, and let the reconciliation engine check logs
             return JobStatus.unknown
 
-    def _submit_to_engine(self, callback_uri: str, *args, **kwargs) -> str:
+    def _submit_to_engine(self, callback_url: str, *args, **kwargs) -> str:
         """
         Submit a job to the execution engine
         """
         job = self._job
-        args = self._generate_workflow_options(job, callback_uri, *args, **kwargs)
+        args = self._generate_workflow_options(job, callback_url, *args, **kwargs)
 
         logger.debug(f"Submitting job '{job.run_id}' to executor '{self.__class__.__name__}' with options {args}")
 
@@ -72,8 +72,8 @@ class SubprocessRunner(AbstractRunner):
         if sync:
             # Really really really only use this for debugging: web request shouldn't ever block on a child process
             proc = subprocess.run(args, capture_output=True)
-            logger.debug(f'Finished job run. Stdout:  {proc.stdout}')
-            logger.debug(f'Finished job run. Stderr:  {proc.stderr}')
+            logger.debug('Finished job run. Stdout: %s',  proc.stdout)
+            logger.debug('Finished job run. Stderr: %s', proc.stderr)
         else:
             proc = subprocess.Popen(args)
 

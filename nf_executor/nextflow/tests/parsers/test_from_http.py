@@ -129,7 +129,7 @@ class TaskStatusParserTests(TestCase):
 
     def test_task_submission_out_of_order(self):
         """If events arrive out of order, verify that task submission event doesn't overwrite newer information"""
-        task = TaskFactory(job=self.running_job, task_id=1, is_completed=True)
+        task = TaskFactory(job=self.running_job, task_id=1, is_completed=True)  # noqa
 
         payload = get_task_submitted_event()
         revised_task = from_http.parse_event(self.running_job, payload)
@@ -150,7 +150,7 @@ class TaskStatusParserTests(TestCase):
         )
 
     def test_task_start_updates_record(self):
-        task = TaskFactory(job=self.running_job, task_id=1, is_submitted=True)
+        task = TaskFactory(job=self.running_job, task_id=1, is_submitted=True)  # noqa
 
         payload = get_task_started_event()
         revised_task = from_http.parse_event(self.running_job, payload)
@@ -195,7 +195,7 @@ class TaskStatusParserTests(TestCase):
         )
 
     def test_task_complete_updates_record(self):
-        task = TaskFactory(job=self.running_job, task_id=1, is_completed=True)
+        task = TaskFactory(job=self.running_job, task_id=1, is_completed=True)  # noqa
 
         payload = get_task_completed_event()
         revised_task = from_http.parse_event(self.running_job, payload)

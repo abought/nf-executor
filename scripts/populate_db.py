@@ -16,9 +16,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.local')
 sys.path.append(str(Path(__file__).parents[1].resolve()))
 django.setup()
 
-
-from nf_executor.api import enums, models
-from nf_executor.api.tests import factories
+from nf_executor.api.tests import factories  # noqa
 
 
 def parse_args():

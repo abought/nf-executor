@@ -58,7 +58,7 @@ class TraceList(collections.UserList):
     def consolidate(self):
         final = {}
         for item in self.data:
-            prev = final.get(item.name)  # WARNING: Tqsk Id is not reused on a retry. ASSUME name will be unique per task??
+            prev = final.get(item.name)  # WARNING: ASSUMES name is unique per task; IDs are new per retry
             if not prev or (item.status >= prev.status):
                 final[item.name] = item
         return TraceList(final.values())

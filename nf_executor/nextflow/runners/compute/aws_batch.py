@@ -13,8 +13,7 @@ from nf_executor.nextflow.exceptions import JobStateException, InvalidRunnerExce
 
 logger = logging.getLogger(__name__)
 
-# NOTES:
-# Jobs that progressed to the STARTING or RUNNING state aren’t canceled. However, the API operation still succeeds, even if no job is canceled. These jobs must be terminated with the TerminateJob operation.
+
 def find_first(iterable, predicate=lambda x: False):
     """Find first item in the list that matches the predicate. Return None if no match found."""
     for item in iterable:
@@ -95,7 +94,8 @@ class AWSBatchRunner(AbstractRunner):
 
         status = job_record['STATUS']
 
-        # enum ref: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/batch/client/describe_jobs.html
+        # enum ref:
+        #   https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/batch/client/describe_jobs.html
         if status == 'SUCCEEDED':
             return JobStatus.completed
         elif status == 'FAILED':
