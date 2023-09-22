@@ -10,6 +10,7 @@ from nf_executor.api.views import (
 app_name = 'api'
 urlpatterns = [
     path('workflows/', workflows.WorkflowListView.as_view(), name='workflows-list'),
+    path('workflows/<pk>/', workflows.WorkflowListView.as_view(), name='workflows-detail'),
 
     # NOTE: I considered nesting under workflows/, but may want to query "all jobs for a user regardless of workflow".
     path('jobs/', jobs.JobListView.as_view(), name='jobs-list'),

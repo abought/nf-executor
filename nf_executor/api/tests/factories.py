@@ -43,6 +43,7 @@ class WorkflowFactory(DjangoModelFactory):
     description = factory.Faker('sentence', nb_words=4)
     version = factory.LazyFunction(sem_version)
     definition_path = factory.Faker('file_path', depth=3)
+    is_active = True
 
     class Meta:
         model = models.Workflow

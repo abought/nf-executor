@@ -34,6 +34,12 @@ class Workflow(TimeStampedModel):
         help_text="Depends on executor type. Folder location, container ARN, etc.",
     )
 
+    is_active = models.BooleanField(
+        db_index=True,
+        default=True,
+        help_text="Does this workflow accept new jobs? (if False, existing jobs will be allowed to complete)"
+    )
+
     def __str__(self):
         return f"{self.name} (v{self.version})"
 

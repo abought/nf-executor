@@ -2,12 +2,19 @@ import os
 
 from django.utils.text import get_valid_filename
 from rest_framework import generics, status
+from rest_framework.exceptions import APIException
 from rest_framework.response import Response
 
 from nf_executor.api import models, serializers
 from nf_executor.api.enums import JobStatus
 from nf_executor.nextflow.runners import get_runner
 from nf_executor.nextflow.util import get_callback_url
+
+
+class LockedWorkflowException(APIException):
+    status_code = 423
+    default_detail = "This workflow is not accepting new job submissions"
+    default_code = 'queue_locked'
 
 
 class JobListView(generics.ListCreateAPIView):
@@ -27,6 +34,11 @@ class JobListView(generics.ListCreateAPIView):
         This is a slightly synchronous view. May want to move to a celery background worker in the future.
         """
         data = serializer.validated_data
+        if not data["workflow"].is_active:
+            # By design, we only lock queue for NEW submissions.
+            #   Existing jobs can be run to completion and receive task events.
+            raise LockedWorkflowException
+
         # Assign persistent logging directory. A job ID is unique *per workflow*
         safe_path = os.path.join(
             str(data["workflow"].pk),
