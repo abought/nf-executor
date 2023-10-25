@@ -92,7 +92,7 @@ class AWSBatchRunner(AbstractRunner):
             # Batch retains records for ~7 days post execution. Very old jobs may always be unresolvable.
             return JobStatus.unknown
 
-        status = job_record['STATUS']
+        status = job_record['status']
 
         # enum ref:
         #   https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/batch/client/describe_jobs.html
