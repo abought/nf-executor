@@ -108,8 +108,8 @@ class JobStatusParserTests(TestCase):
             'Job status set to completed'
         )
 
-        self.assertNotEquals(filled_job.duration, 0, 'Duration populated')
-        self.assertNotEquals(filled_job.succeed_count, 0, 'Succ count populated')
+        self.assertNotEqual(filled_job.duration, 0, 'Duration populated')
+        self.assertNotEqual(filled_job.succeed_count, 0, 'Succ count populated')
 
 
 class TaskStatusParserTests(TestCase):
