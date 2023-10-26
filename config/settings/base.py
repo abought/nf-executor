@@ -57,6 +57,7 @@ ALLOWED_HOSTS = []
 
 # Application definition
 DJANGO_APPS = [
+    'django.contrib.auth',  # TODO: required by some packages though we don't directly use it in app code; revisit
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
