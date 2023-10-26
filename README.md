@@ -26,6 +26,11 @@ Currently, only a basic development mode is implemented (for prototyping purpose
 python manage.py runserver --settings=config.settings.local
 ```
 
+## Run unit tests
+ ```bash
+ python manage.py test --settings=config.settings.local
+ ```
+
 ## Management commands
 Database migrations:
 ```bash
