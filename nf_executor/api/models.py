@@ -204,6 +204,8 @@ class Task(TimeStampedModel):
         help_text="Run complete time from TRACE field of records"
     )
 
+    # TODO: Save trace fields for metrics: `peak_vmem`, `%cpu`, `rchar`, `wchar`
+
     class Meta:
         # The same task ID can only be used once per job.
         constraints = [
