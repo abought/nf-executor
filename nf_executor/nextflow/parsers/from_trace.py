@@ -58,7 +58,7 @@ class TraceList(collections.UserList):
     def consolidate(self):
         final = {}
         for item in self.data:
-            prev = final.get(item.name)  # WARNING: ASSUMES name is unique per task; IDs are new per retry
+            prev = final.get(item.name)  # WARNING: ASSUMES name is unique per task; IDs are new per retry of same task
             if not prev or (item.status >= prev.status):
                 final[item.name] = item
         return TraceList(final.values())
@@ -105,7 +105,7 @@ class TraceList(collections.UserList):
         running = [i.status for i in items if i.status <= enums.TaskStatus.RUNNING]
         errs = [
             i.status for i in items
-            if enums.TaskStatus.RUNNING < i.status <= enums.TaskStatus.ABORTED  # Note: May include retries-in-progress
+            if enums.TaskStatus.RUNNING < i.status <= enums.TaskStatus.FAILED  # Note: May include retries-in-progress
         ]
 
         if len(running):

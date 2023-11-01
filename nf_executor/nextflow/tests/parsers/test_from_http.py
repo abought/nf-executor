@@ -17,42 +17,42 @@ FIXTURE_DIR = os.path.join(os.path.dirname(__file__), '../fixtures')
 
 
 def get_job_started_event() -> dict:
-    fn = os.path.join(FIXTURE_DIR, 'started.json')
+    fn = os.path.join(FIXTURE_DIR, 'json_events/job_started.json')
     with open(fn, 'r') as f:
         content = json.load(f)
     return content
 
 
 def get_job_completed_event() -> dict:
-    fn = os.path.join(FIXTURE_DIR, 'completed.json')
+    fn = os.path.join(FIXTURE_DIR, 'json_events/job_completed.json')
     with open(fn, 'r') as f:
         content = json.load(f)
     return content
 
 
 def get_task_submitted_event() -> dict:
-    fn = os.path.join(FIXTURE_DIR, 'process_submitted.json')
+    fn = os.path.join(FIXTURE_DIR, 'json_events/process_submitted.json')
     with open(fn, 'r') as f:
         content = json.load(f)
     return content
 
 
 def get_task_started_event() -> dict:
-    fn = os.path.join(FIXTURE_DIR, 'process_started.json')
+    fn = os.path.join(FIXTURE_DIR, 'json_events/process_started.json')
     with open(fn, 'r') as f:
         content = json.load(f)
     return content
 
 
 def get_task_completed_event() -> dict:
-    fn = os.path.join(FIXTURE_DIR, 'process_completed.json')
+    fn = os.path.join(FIXTURE_DIR, 'json_events/process_completed.json')
     with open(fn, 'r') as f:
         content = json.load(f)
     return content
 
 
 def get_full_event_stream() -> list[dict]:
-    fn = os.path.join(FIXTURE_DIR, 'nextflow-mock-full-http.json')
+    fn = os.path.join(FIXTURE_DIR, 'json_events/nextflow-mock-full-http.json')
     with open(fn, 'r') as f:
         content = json.load(f)
     return content

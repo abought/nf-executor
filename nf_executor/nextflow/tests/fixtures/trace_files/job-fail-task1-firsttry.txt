@@ -1,0 +1,2 @@
+task_id	hash	native_id	name	status	exit	submit	duration	realtime	%cpu	peak_rss	peak_vmem	rchar	wchar
+1	cf/19fdba	39254	SPLITLETTERS (1)	FAILED	1	2023-11-01 12:02:02.995	213ms	150ms	-	-	-	-	-

@@ -1,11 +1,14 @@
 Mock workflow. Used to verify logging features.
 
 ## Running the workflow
-```bash
-$ nextflow run hello.nf -name insert_id_here -with-weblog http://127.0.0.1:8000/workflows/insert_id_here/report/ -with-report sample-report.html -with-trace
+**Note**: This string is an example. The actual reporter URL may vary, eg if authentication is needed. For best event capture results, run workflow from within the actual Django app.
 
-$ nextflow log insert_i_here
-$ nextflow clean -f
+```bash
+JOB_ID="job-`date "+%F-%H-%M-%S"`"
+nextflow run hello.nf -name $JOB_ID -with-weblog "http://127.0.0.1:8000/workflows/$JOB_ID/report/" -with-report sample-report.html -with-trace
+
+nextflow log $JOB_ID
+nextflow clean -f
 ```
 
 ## Replaying a captured event stream

@@ -1,0 +1,6 @@
+task_id	hash	native_id	name	status	exit	submit	duration	realtime	%cpu	peak_rss	peak_vmem	rchar	wchar
+1	c7/16bee9	40524	SPLITLETTERS (1)	COMPLETED	0	2023-11-01 12:15:17.088	237ms	0ms	-	-	-	-	-
+3	86/89264b	40554	CONVERTTOUPPER (2)	FAILED	1	2023-11-01 12:15:17.402	233ms	209ms	-	-	-	-	-
+2	6e/87959b	40555	CONVERTTOUPPER (1)	FAILED	1	2023-11-01 12:15:17.414	357ms	343ms	-	-	-	-	-
+4	4e/866cd3	40610	CONVERTTOUPPER (2)	FAILED	1	2023-11-01 12:15:17.703	223ms	187ms	-	-	-	-	-
+5	0b/8c5f24	40638	CONVERTTOUPPER (1)	ABORTED	-	2023-11-01 12:15:17.788	-	-	-	-	-	-	-
