@@ -254,7 +254,12 @@ class AbstractRunner(abc.ABC):
             logger.error(f'Could not locate trace file expected to reconcile job {job.run_id}')
             return JobStatus.unknown
 
-        parsed = parse_tracelog(trace_contents)
+        try:
+            parsed = parse_tracelog(trace_contents)
+        except:
+            logger.error(f'Could not parse trace file for job {job.run_id}')
+            return JobStatus.unknown
+
         resolved = parsed.final_status()
 
         return JobStatus.task_to_job(resolved)

@@ -125,6 +125,15 @@ class JobFactory(DjangoModelFactory):
             duration=1000  # start -> now
         )
 
+        is_cancel_pending = factory.Trait(
+            status=enums.JobStatus.cancel_pending.value,
+            completed_on=None,
+            executor_id='42',
+            duration=0,
+            succeed_count=0,
+            retries_count=0
+        )
+
 
 class TaskFactory(DjangoModelFactory):
     job = factory.SubFactory(JobFactory)

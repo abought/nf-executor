@@ -43,7 +43,6 @@ class SubprocessRunner(AbstractRunner):
     """
     Execute jobs in a subprocess worker that continues running on same host, even after the web app stops.
         ONLY used for dev/testing, and even then we should usually use celery.
-
     """
     def _check_run_state(self) -> JobStatus:
         # PID based execution doesn't keep queue or records, so we have only two states (running or not)
