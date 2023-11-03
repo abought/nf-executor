@@ -28,6 +28,8 @@ class LocalStorage(AbstractJobStorage):
             return f.read()
 
     def write_contents(self, path: str, content, mode='w'):
+        base = os.path.dirname(path)
+        os.makedirs(base, exist_ok=True)  # make containing folder first if needed.
         with open(path, mode) as f:
             f.write(content)
 

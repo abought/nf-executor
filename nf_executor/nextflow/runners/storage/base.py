@@ -3,6 +3,7 @@ import logging
 import os
 from pathlib import Path
 
+from django.utils.text import slugify
 
 from nf_executor.nextflow.exceptions import StorageAccessException
 
@@ -22,7 +23,7 @@ class AbstractJobStorage(abc.ABC):
         if root:
             self._path = self.relative(root, logs_dir, check=False)
 
-        self._p = Path(self._path)  # Used for checking paths
+        self._p = Path(self._path).resolve()  # Used for checking paths. Convert symlinks to absolute form
 
     def get_home(self) -> str:
         """Get the home directory for this storage location (root + project specific name)"""
@@ -35,6 +36,8 @@ class AbstractJobStorage(abc.ABC):
         By default, raises an error if the new path is above the root directory. Simplistic protection
             against directory traversal attacks.
         """
+        # TODO: Add slugify or get safe filename in a way that doesn't break file extensions like .txt in last segment
+        # safe = [slugify(arg) for arg in args]  # Ensure that no path segment contains slashes or other filename-unsafe chars
         res = os.path.join(self._path, *args)
 
         if check and len(args) > 1:

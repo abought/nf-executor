@@ -4,6 +4,7 @@ import os
 import signal
 import subprocess
 
+from nf_executor.api import models
 from .base import AbstractRunner
 
 from nf_executor.api.enums import JobStatus
@@ -44,6 +45,31 @@ class SubprocessRunner(AbstractRunner):
     Execute jobs in a subprocess worker that continues running on same host, even after the web app stops.
         ONLY used for dev/testing, and even then we should usually use celery.
     """
+    CONFIG_KEY = 'LOCAL_RUNNER'
+
+    def _generate_workflow_options(self, job: models.Job, callback_url: str, *args, **kwargs) -> list[str]:
+        """Generate the workflow options used by nextflow when running locally."""
+        workflow_def = job.workflow.definition_path
+
+        wd = self._work_dir(job.run_id)
+        params_fn = self._params_fn(job.run_id)
+        trace_fn = self._trace_fn(job.run_id)
+        log_fn = self._log_fn(job.run_id)
+        report_fn = self._report_fn(job.run_id)
+
+        res = [
+            'nextflow',
+            '-log', log_fn,
+            'run', workflow_def,
+            '-params-file', params_fn,
+            '-name', job.run_id,
+            '-with-trace', trace_fn,
+            '-with-weblog', callback_url,
+            '-with-report', report_fn,
+            '-work-dir', wd,
+        ]
+        return res
+
     def _check_run_state(self) -> JobStatus:
         # PID based execution doesn't keep queue or records, so we have only two states (running or not)
         # That's kind of annoying for guessing error states, so this will return "unknown" status and defer

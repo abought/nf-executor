@@ -25,23 +25,66 @@ def find_first(iterable, predicate=lambda x: False):
 # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/batch/client/submit_job.html
 
 class AWSBatchRunner(AbstractRunner):
+    """
+    Run a workflow in AWS Batch
+
+    NOTE: At present, this is heavily hard coded to use nextflow with one particular custom
+        Docker container + AWS Batch command.
+        It provides specific hard coded envvars (for entrypoint script) and command args (for batch job definition).
+
+        We can make this more modular/configurable in the future
+    """
+    CONFIG_KEY = 'AWS_BATCH_RUNNER'
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        if self._queue is None:
-            raise InvalidRunnerException('The AWS Batch runner requires a queue definition')
+        # The AWS batch queue to use for all worflow-coordination jobs. Individual workflows must specify the queues
+        #   for their own tasks; WF runner only controls the nextflow process itself.
+        self._head_queue_arn = self._config['HEAD_QUEUE_ARN']
+
+        # The AWS batch job definition that defines how to run nextflow. (using a special container def for this project)
+        self._head_def_arn = self._config['HEAD_DEF_ARN']
 
     def _submit_to_engine(self, callback_url: str, *args, **kwargs) -> str:
+        """
+        Submit workflow to engine: run the nextflow process as an AWS batch job that in turn spawns other batch jobs.
+         Because of limitations in nextflow, this is tightly coupled to a specific custom dockerfile that wraps
+          Nextflow and adds missing features like storing log and workflow defs on s3
+        """
         job = self._job
 
+        workflow_path = job.workflow.definition_path
+        if not workflow_path.startswith('arn'):
+            raise InvalidRunnerException(f'The specified workflow {job.workflow.pk} must be an AWS Batch job definition ARN')
+
+        env = [
+                {"name": "NF_CONFIG", "value": job.workflow.definition_config},
+                {"name": "NF_LOGS_DEST", "value": self._log_fn(job.run_id)},
+            ]
+        if job.workflow.definition_path.startswith('s3'):
+            env.append({"name": "NF_WORKFLOW_S3_PATH", "value": job.workflow.definition_path})
+
+        runner_def_params = {
+            # NF options
+            "WorkflowPath": 'downloaded_workflow/' if workflow_path.startswith('s3') else workflow_path,
+            "TraceLogFile": self._trace_fn(job.run_id),
+            "ReportHTMLFile": self._report_fn(job.run_id),
+            "ConfigFile": ".nextflow/config",  # Our container dumps envvar text to this file inside container
+            "BucketDir": self._work_dir(job.run_id),
+            # WF options
+            "ParamsFile": self._params_fn(job.run_id),
+        }
         client = boto3.client('batch')  # Gets credentials (incl STS) via instance IAM role, else hard fail
         result = client.submit_job(
             # Dev note: shows `botocore.errorfactory.ClientException` using nonexistent job definition etc.
             jobName=job.run_id,
-            jobDefinition=job.workflow.definition_path,
-            jobQueue=self._queue,
-            # TODO: identify params required by job and how to pass
-            parameters={},
+            jobDefinition=self._head_def_arn,
+            jobQueue=self._head_queue_arn,
+            parameters=runner_def_params,
+            containerOverrides={
+                'environment': env
+            },
         )
         return result['jobArn']
 

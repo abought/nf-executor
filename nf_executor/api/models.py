@@ -34,6 +34,11 @@ class Workflow(TimeStampedModel):
         help_text="Depends on executor type. Folder location, container ARN, etc.",
     )
 
+    definition_config = models.TextField(
+        blank=True,
+        help_text="Configuration options (such as nextflow.config) to be used by this workflow. This can override any nextflow.config that was provided in the workflow folder."
+    )
+
     is_active = models.BooleanField(
         db_index=True,
         default=True,
@@ -82,12 +87,12 @@ class Job(TimeStampedModel):
         default=dict,
         help_text="User-specified params unique to this workflow"
     )
-    logs_dir = models.CharField(
+    storage_root = models.CharField(
+        # This will always be relative to the storage root, eg <root>/runs/<wf_id>/<job_id>
         max_length=256,
         blank=True,
         null=True,
-        help_text="Storage location for job-specific record files (like logs) that should be retained "
-                  "after job is completed. Other output locations might be specified via the params or job config."
+        help_text="Location (relative to storage root) for job-specific files that are retained after job is completed."
     )
     owner = models.CharField(
         max_length=100,

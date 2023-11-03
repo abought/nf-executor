@@ -41,7 +41,7 @@ class PseudoRunner(AbstractRunner):
 
     def _trace_fn(self, run_id: str) -> str:
         """We're ignoring storages and going straight to a fixture file"""
-        return self._trace
+        return self._stable_storage.relative(self._trace)
 
     ####
     # Methods not used by mock
@@ -81,7 +81,8 @@ class TestRunnerReconciliation(TestCase):
             self.assertTrue(is_ok, f'Reconciliation favors the actual job status for job {j.status}')
 
     ###
-    # Cancel functionality, including reconciliation of pending cancel status
+    # Cancel functionality, including reconciliation of pending cancel status. Note: trace file never used to make
+    #   decisions here. Either the job is still running, or it isn't.
     def test_cancel_pending_changes_to_canceled_by_exit_code(self):
         """A job was pending cancellation, but new information from the executor upgrades that status"""
         job = JobFactory(is_cancel_pending=True)
@@ -91,32 +92,12 @@ class TestRunnerReconciliation(TestCase):
         self.assertFalse(is_ok, f'Pending cancel is resolved based on exit code')
         self.assertEqual(actual, JobStatus.canceled, f'Pending cancel is resolved based on exit code')
 
-    def test_cancel_pending_changes_to_canceled_by_trace_fail(self):
-        """A job was pending cancellation, but new information from the executor upgrades that status"""
-        job = JobFactory(is_cancel_pending=True)
-        runner = make_runner(job, None, 'FAILURE')  # No exit code, use trace file instead
-
-        actual, is_ok = runner.reconcile_job_status(save=False)
-        self.assertFalse(is_ok, f'Pending cancel is resolved based on trace file')
-        self.assertEqual(actual, JobStatus.canceled, f'Pending cancel is resolved based on exit code')
-
-    def test_cancel_pending_changes_to_canceled_by_trace_success(self):
-        """A job was pending cancellation, but new information from the executor upgrades that status"""
-        job = JobFactory(is_cancel_pending=True)
-        # Design note: even in event of a race condition where job finishes before cancel signal... if user cancels,
-        #   the job is considered canceled
-        runner = make_runner(job, None, 'SUCCESS')  # No exit code, use trace file instead
-
-        actual, is_ok = runner.reconcile_job_status(save=False)
-        self.assertFalse(is_ok, f'Pending cancel is resolved based on trace file')
-        self.assertEqual(actual, JobStatus.canceled, f'Pending cancel is resolved based on exit code')
-
     def test_cancel_pending_if_no_records_mark_canceled(self):
         """
         A job was pending cancellation, but we've lost all records of either trace file or exit code
         TODO: I have mixed feelings about this one. We're going to be generous and assume that if the cancel signal
             was sent, then if there are no records, it's effectively dead.
-            If we have a lot of dropped signals, we might consider changing this to "unknown" instead.
+            If we have a lot of dropped signals, we might consider special handling for "unknown" instead.
         """
         job = JobFactory(is_cancel_pending=True)
         runner = make_runner(job, None, 'UNKNOWN')  # No information on resolution is available

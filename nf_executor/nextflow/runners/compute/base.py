@@ -41,19 +41,19 @@ class AbstractRunner(abc.ABC):
         isn't smart enough to talk to an external queue like RabbitMQ (limited control over payload format), so syncing
          is accomplished by a more manual process. (usually a celery task)
     """
+    CONFIG_KEY = None
+
     def __init__(
             self,
             job: Job,
             storage: AbstractJobStorage,
-            workdir=settings.NF_EXECUTOR['workdir'],
-            queue=settings.NF_EXECUTOR['queue'],
+            config=settings.NF_EXECUTOR.get(CONFIG_KEY, {}),
             *args,
             **kwargs
     ):
         self._job = job
         self._stable_storage = storage  # Persistent files like job config files and logs: exist before and after job
-        self.workdir = workdir  # Intermediate storage during job run; may be deleted when runner exits
-        self._queue = queue
+        self._config = config
 
     ##########
     # Public interface
@@ -82,8 +82,9 @@ class AbstractRunner(abc.ABC):
             self._write_params(job, params)
             params_ok = True
         except:
+            # TODO: Replace logs_dir with alternative here
             params_ok = False
-            logger.exception(f"Could not write job parameters file in {job.logs_dir}. Check if volume is readable.")
+            logger.exception(f"Could not write job parameters file in {job.storage_root}. Check if volume is readable.")
 
         if not params_ok:
             # This may be a canary for unreachable working directory, so we shouldn't allow the job to proceed.
@@ -169,30 +170,6 @@ class AbstractRunner(abc.ABC):
             json.dumps(params, indent=2)
         )
 
-    def _generate_workflow_options(self, job: models.Job, callback_url: str, *args, **kwargs) -> list[str]:
-        """Generate the workflow options used by nextflow."""
-        workflow_def = job.workflow.definition_path
-
-        params_fn = self._params_fn(job.run_id)
-        trace_fn = self._trace_fn(job.run_id)
-        log_fn = self._stable_storage.relative(f'nf_log_{job.run_id}.txt')
-        report_fn = self._stable_storage.relative(f'report-{job.run_id}.html')
-
-        res = [
-            'nextflow',
-            '-log', log_fn,
-            'run', workflow_def,
-            '-params-file', params_fn,
-            '-name', job.run_id,
-            '-with-trace', trace_fn,
-            '-with-weblog', callback_url,
-            '-with-report', report_fn,
-            # Workflow definition and report files are written to root of workdir location, other files go under that
-            '-work-dir', self.workdir,
-        ]
-
-        return res
-
     @abc.abstractmethod
     def _submit_to_engine(self, callback_url: str, *args, **kwargs) -> str:
         raise NotImplementedError
@@ -234,7 +211,7 @@ class AbstractRunner(abc.ABC):
                 # The nextflow executor is still running, so we are "still cancel pending"
                 return JobStatus.cancel_pending
             else:
-                # Cancel has succeeded
+                # Any other executor status, incl "unknown", is taken to mean that cancel has succeeded
                 return JobStatus.canceled
 
         if actual_status != JobStatus.unknown:
@@ -275,11 +252,21 @@ class AbstractRunner(abc.ABC):
         raise NotImplementedError
 
     ##############
-    # Helpers: names of key files that are used in multiple places (e.g. writing a trace file, then checking it)
+    # Helpers: names of key NF-specific files that are used in multiple places by the compute engine.
     def _params_fn(self, run_id: str) -> str:
         """Path to params file"""
-        return self._stable_storage.relative(f'nextflow_params_{run_id}.json')
+        return self._stable_storage.relative(f'inputs', 'nextflow_params.json')
+
+    def _work_dir(self, run_id: str) -> str:
+        return self._stable_storage.relative(f'workdir/')
 
     def _trace_fn(self, run_id: str) -> str:
         """Path to nextflow execution trace file"""
-        return self._stable_storage.relative(f'trace_{run_id}.txt')
+        return self._stable_storage.relative('logs', f'trace_{run_id}.txt')
+
+    def _report_fn(self, run_id: str) -> str:
+        return self._stable_storage.relative('logs', f'report_{run_id}.html')
+
+    def _log_fn(self, run_id: str) -> str:
+        """Where log file will be written (or copied after run is complete, depending on executor)"""
+        return self._stable_storage.relative('logs', f'nextflow_{run_id}.log')
