@@ -44,7 +44,7 @@ class JobListView(generics.ListCreateAPIView):
             str(data["workflow"].pk),
             get_valid_filename(data["run_id"])
         )
-        data['storage_root'] = safe_path
+        data['job_storage_root'] = safe_path
 
         # First save: record work requested by user. The executor will save again once work has been scheduled.
         job = serializer.save()

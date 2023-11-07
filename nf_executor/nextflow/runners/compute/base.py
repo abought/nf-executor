@@ -84,7 +84,7 @@ class AbstractRunner(abc.ABC):
         except:
             # TODO: Replace logs_dir with alternative here
             params_ok = False
-            logger.exception(f"Could not write job parameters file in {job.storage_root}. Check if volume is readable.")
+            logger.exception(f"Could not write job parameters file in {job.job_storage_root}. Check if volume is readable.")
 
         if not params_ok:
             # This may be a canary for unreachable working directory, so we shouldn't allow the job to proceed.

@@ -87,7 +87,7 @@ class Job(TimeStampedModel):
         default=dict,
         help_text="User-specified params unique to this workflow"
     )
-    storage_root = models.CharField(
+    job_storage_root = models.CharField(
         # This will always be relative to the storage root, eg <root>/runs/<wf_id>/<job_id>
         max_length=256,
         blank=True,
@@ -97,8 +97,8 @@ class Job(TimeStampedModel):
     owner = models.CharField(
         max_length=100,
         help_text="eg User ID provided by an external service. Must not be mutable (username or ID, not email)",
-        null=True,
-        blank=True,
+        null=False,
+        blank=False,
         db_index=True,
     )
 

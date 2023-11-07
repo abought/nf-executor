@@ -19,7 +19,7 @@ def _get_class_from_string(path: str):
 
 def get_runner(job: Job, *args, **kwargs) -> AbstractRunner:
     """Get a compute executor for the designated workflow"""
-    storage = get_storage(job.storage_root, *args, **kwargs)
+    storage = get_storage(job.job_storage_root, *args, **kwargs)
     return _CC(
         job,
         storage,

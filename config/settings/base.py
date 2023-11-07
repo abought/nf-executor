@@ -113,7 +113,7 @@ NF_EXECUTOR = {
     'COMPUTE_ENGINE': 'nf_executor.nextflow.runners.compute.SubprocessRunner',
     'STORAGE_ENGINE': 'nf_executor.nextflow.runners.storage.LocalStorage',
 
-    # Root folder for nextflow run output
+    # Root folder for nextflow run output. Can be local or S3 path, including subfolders/prefixes
     'STORAGE_ROOT': '/tmp/nf_executor/runs',
 
     'LOCAL_RUNNER': {},
