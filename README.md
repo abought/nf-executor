@@ -3,42 +3,52 @@ A command and control node for a microservice that runs multiple nextflow workfl
 
 This does not interact with users and should not be exposed to the public internet. It handles LAUNCHING and MONITORING of (many) separate workflow processes. It is the job of the web application to translate user inputs into the options expected by nextflow.
 
-## Setup (for local development)
+## Local development
+### Setup
+Local development occurs through Docker. If you use an IDE such as Pycharm, you can even [specify the docker compose file as project interpreter]() to take advantage of IDE features within the container.
 
-Initial installation
+Initial installation: build the container, then set up the database
 ```bash
-python3 -mvenv .venv
-pip3 install -r requirements/local.txt 
+docker-compose -f local.yml build
+docker-compose -f local.yml run --rm django python manage.py migrate
+
+# Add sample data to the database
+docker-compose -f local.yml run --rm django python scripts/populate_db.py
 ```
 
-Then run the database migrations to create the DB and schema:
+### Running the dev server
+
+Note: instead of a CLI docker command, you can alternately use IDE integrations to run django. Just specify docker-compose as the project interpreter.
+
+`docker-compose -f local.yml up -d`
+
+### Validating code
+
+#### Unit tests
 ```bash
-python manage.py migrate --settings=config.settings.local
+docker-compose -f local.yml run --rm django python manage.py test
 ```
 
-For local development, you will need Nextflow installed. This demo was written using Nextflow version > 23.04.2 and Python 3.11.
+### Managing database migrations
+Django has the ability to automatically generate database migrations. The *local* (but not production) container will run migrations on every container start.
 
-In the initial prototype, you may need to explicitly edit some settings in `config.settings` (local and base). Particularly referencing file locations.
-
-## Running
-Currently, only a basic development mode is implemented (for prototyping purposes). In the future, local and production containers will be provided.
 ```bash
-python manage.py runserver --settings=config.settings.local
+# Generate new DB migrations
+docker-compose -f local.yml run --rm django python manage.py makemigrations
+# Consolidate as many migrations as possible
+docker-compose -f local.yml run --rm django python manage.py squashmigrations
 ```
 
-## Run unit tests
- ```bash
- python manage.py test --settings=config.settings.local
- ```
 
-## Management commands
-Database migrations:
+### Interactive debugging shell
 ```bash
-python manage.py makemigrations --settings=config.settings.local
-python manage.py migrate --settings=config.settings.local
+docker-compose -f local.yml run --rm django python manage.py shell
 ```
 
-Interactive debugging shell:
+### Dropping the database and restarting from scratch
+During early development, this can be useful for iterating the schema without too many spare migrations. Definitely do not do this once the app is "live", as we really want to preserve migration history!
 ```bash
-python manage.py shell --settings=config.settings.local
+docker-compose -f local.yml down -v
+docker-compose -f local.yml run --rm django python manage.py makemigrations
+docker-compose -f local.yml up
 ```

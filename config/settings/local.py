@@ -11,15 +11,6 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
 ]
 
-# FIXME: Temporary until docker setup with postgres
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': ROOT_DIR / 'db.sqlite3',  # noqa
-    }
-}
-
-
 # django-debug-toolbar
 # ------------------------------------------------------------------------------
 # https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#prerequisites

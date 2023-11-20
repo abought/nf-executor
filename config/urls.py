@@ -1,5 +1,5 @@
 """
-URL configuration for nf_executor project.
+URL configuration for abc_impute project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/4.2/topics/http/urls/
@@ -20,12 +20,12 @@ from django.urls import include, path
 
 urlpatterns = [
     path(
-        'api/v1/',
-        include('nf_executor.api.urls', namespace='apiv1'),
+        'api/v2/',
+        include('abc_impute.api.urls', namespace='apiv2'),
     ),
     path(
         'nextflow/',
-        include('nf_executor.nextflow.urls', namespace='nextflow'),
+        include('abc_impute.nextflow.urls', namespace='nextflow'),
     ),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
