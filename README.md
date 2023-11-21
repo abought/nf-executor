@@ -16,6 +16,16 @@ docker-compose -f local.yml run --rm django python manage.py migrate
 docker-compose -f local.yml run --rm django python scripts/populate_db.py
 ```
 
+### Configuring Pycharm
+If you are using pycharm, add the following  lines to your `Django Console` custom start script settings:
+
+```python
+import os
+os.environ.setdefault("DATABASE_URL","postgres://{}:{}@{}:{}/{}".format(os.environ['POSTGRES_USER'], os.environ['POSTGRES_PASSWORD'], os.environ['POSTGRES_HOST'], os.environ['POSTGRES_PORT'], os.environ['POSTGRES_DB']))
+os.environ.setdefault("CELERY_BROKER_URL", os.environ['REDIS_URL'])
+```
+
+
 ### Running the dev server
 
 Note: instead of a CLI docker command, you can alternately use IDE integrations to run django. Just specify docker-compose as the project interpreter.
