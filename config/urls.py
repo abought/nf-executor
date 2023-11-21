@@ -17,6 +17,8 @@ Including another URLconf
 from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import include, path
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+
 
 urlpatterns = [
     path(
@@ -27,6 +29,16 @@ urlpatterns = [
         'nextflow/',
         include('abc_impute.nextflow.urls', namespace='nextflow'),
     ),
+    path("api/internal/users/", include("abc_impute.users.urls", namespace="users")),
+    path("api/internal/accounts/", include("allauth.urls")),
+
+    path("api/v2/schema/", SpectacularAPIView.as_view(), name="api-schema"),
+    path(
+        "api/v2/",
+        SpectacularSwaggerView.as_view(url_name="api-schema"),
+        name="api-docs",
+    ),
+
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 if settings.DEBUG and "debug_toolbar" in settings.INSTALLED_APPS:

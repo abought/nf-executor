@@ -117,7 +117,6 @@ REST_FRAMEWORK = {
     #     "rest_framework.authentication.TokenAuthentication",
     # ),
     # "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
-    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 100,
     'DEFAULT_PARSER_CLASSES': (
@@ -134,8 +133,14 @@ REST_FRAMEWORK = {
         'rest_framework.filters.OrderingFilter',
         'rest_framework.filters.SearchFilter',
     ),
-    'DEFAULT_VERSION': 'v2',
-    'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.NamespaceVersioning',
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Imputation Server API",
+    "DESCRIPTION": "Documentation and interactive examples for API endpoints",
+    "VERSION": "1.0.0",
+    # "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAdminUser"],
 }
 
 NF_EXECUTOR = {

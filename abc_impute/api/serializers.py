@@ -63,10 +63,3 @@ class TaskSerializer(drf_serializers.ModelSerializer):
         model = api_models.Task
         fields = ('job', 'name', 'status', 'submitted_on', 'started_on', 'completed_on')
         read_only_fields = ('job', 'name', 'status', 'submitted_on', 'started_on', 'completed_on')
-
-
-class HeartbeatSerializer(drf_serializers.ModelSerializer):
-    class Meta:
-        model = api_models.JobHeartbeat
-        fields = ('created', 'job', 'label', 'message')
-        read_only_fields = ('created',)

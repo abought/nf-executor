@@ -38,6 +38,10 @@ SECURE_CONTENT_TYPE_NOSNIFF = env.bool('DJANGO_SECURE_CONTENT_TYPE_NOSNIFF', def
 # ------------------------------------------------------------------------------
 INSTALLED_APPS += ['gunicorn']  # noqa F405
 
+SPECTACULAR_SETTINGS["SERVERS"] = [  # noqa: F405
+    {"url": "https://https://imputation.biodatacatalyst.nhlbi.nih.gov", "description": "Production server"},
+]
+
 # Sentry
 # ------------------------------------------------------------------------------
 SENTRY_DSN = env("SENTRY_DSN")

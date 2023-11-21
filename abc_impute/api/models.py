@@ -219,31 +219,3 @@ class Task(TimeStampedModel):
                 name='Task per job'
             )
         ]
-
-
-class JobHeartbeat(TimeStampedModel):
-    """
-    A workflow may optionally send JSON formatted heartbeat messages to communicate about task progress
-    This only works if the job supports sending such messages, and is given a callback URL to do so.
-
-    Care must be taken to ensure that the workflow actually
-    """
-    job = models.ForeignKey(
-        Job,
-        on_delete=models.SET_NULL,
-        null=True,
-        help_text="The job that this message belongs to",
-        db_index=True
-    )
-    label = models.CharField(
-        max_length=50,
-        null=False,
-        blank=False,
-        help_text="Identify the type of message being sent"
-    )
-    message = models.JSONField(
-        blank=False,
-        null=False,
-        default=dict,
-        help_text="User-specified params unique to this workflow"
-    )

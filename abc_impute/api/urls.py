@@ -2,7 +2,6 @@ from django.urls import path
 
 from abc_impute.api.views import (
     jobs,
-    heartbeats,
     tasks,
     workflows,
 )
@@ -17,8 +16,5 @@ urlpatterns = [
     path('jobs/<pk>', jobs.JobDetailView.as_view(), name='jobs-detail'),
 
     path('jobs/<job_id>/tasks', tasks.TaskListView.as_view(), name='tasks-list'),
-    path('jobs/<job_id>/heartbeats', heartbeats.HeartbeatListView.as_view(), name='heartbeats-list'),
-
-
     # path('tasks/', , name='tasks-list'),
 ]
